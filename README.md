@@ -8,8 +8,19 @@ Most colleges still build timetables by hand at the start of every semester. It 
 
 ## Demo
 
+- **Live (GitHub Pages):** [ekam-07.github.io/time-weave](https://ekam-07.github.io/time-weave/)
+- **Real GNDEC CSE timetable, straight away:** [ekam-07.github.io/time-weave/?sample=gndec](https://ekam-07.github.io/time-weave/?sample=gndec)
 - **Demo video:** *(add your link here, e.g. a GitHub Release asset or YouTube)*
-- **Try it:** open `index.html` in any modern browser, click **Load a demo college**, and log in as admin with PIN **1234**.
+- **Try it locally:** open `index.html` in any modern browser, click **Load a demo college**, and log in as admin with PIN **1234**.
+
+## Real data: GNDEC CSE
+
+The repo ships with the Computer Science department of GNDEC Ludhiana's July–Dec 2026 timetable, imported from the department's published FET export (`data/gndec-cse-classes-jul-dec-2026.html`): 26 classes, 60 teachers, 515 lessons, with all 1,440 cells matching the published version.
+
+- Open `index.html?sample=gndec` (or click **Load GNDEC CSE timetable** on the home screen).
+- PINs for this copy: admin `1234`, CSE head `1111`, App. Sci. head `2222`. Students need no PIN.
+- As a student, pick your class, your subsection (for example B1) and, from 3rd year, your track.
+- To test the importer yourself: admin → **College** → **Import FET timetable** → choose `data/gndec-cse-classes-jul-dec-2026.html`.
 
 ## Who uses it
 

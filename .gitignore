@@ -2,9 +2,6 @@
 *.mp4
 *.webm
 
-# Third-party data downloaded for testing (republishing it is the college's call)
-data/
-
 # Earlier design and outdated summary, kept locally only
 index-bold.html
 TimeWeave-summary.pdf

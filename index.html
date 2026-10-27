@@ -192,6 +192,8 @@
 <input type="file" id="sheetIn" accept=".csv,.xlsx,.xls" class="hidden" onchange="importSheet(event)">
 <input type="file" id="fetIn" accept=".html,.htm" class="hidden" onchange="openFET(event)">
 
+<!-- Ready-made real college (GNDEC CSE, July–Dec 2026). Optional: the app works without it. -->
+<script src="data/gndec-cse-2026.js"></script>
 <script>
 const PAGES = {
   setup:   {t:'College',     g:'Set up',    i:'1', roles:['admin']},
@@ -329,7 +331,8 @@ function nextBtns(){
 
 // ---------- Login ----------
 function pageLogin(){
-  const demo = S.settings.college === 'Demo Institute of Technology';
+  const demo = S.settings.college === 'Demo Institute of Technology', gndec = S.settings.college === 'GNDEC Ludhiana · CSE';
+  const hasGndec = !!(window.TW_SAMPLES && window.TW_SAMPLES.gndec);
   return `<div class="login">
     <div class="hero"><div class="logo">▦</div><h1>TimeWeave</h1><p>Clash-free college timetables, made in minutes.</p></div>
     <div class="tiles">
@@ -346,8 +349,10 @@ function pageLogin(){
     </div>
     <div id="loginMsg"></div>
     <p class="muted center">${demo ? 'Demo PINs: admin <b>1234</b> · CSE <b>1111</b> · ECE <b>2222</b> · Maths <b>3333</b>'
+      : gndec ? 'GNDEC CSE PINs: admin <b>1234</b> · CSE <b>1111</b> · App. Sci. <b>2222</b>'
       : `First time? The admin PIN is <b>${S.settings.college ? '…' : '1234'}</b>.`}
-      · <a href="#" onclick="loadSample();return false">Load a demo college</a></p>
+      · <a href="#" onclick="loadSample();return false">Load a demo college</a>
+      ${hasGndec ? ` · <a href="#" onclick="loadCollege('gndec');return false">Load GNDEC CSE timetable</a>` : ''}</p>
   </div>`;
 }
 
@@ -1742,6 +1747,20 @@ function importJSON(e){
 }
 function resetAll(){ if(confirm('Clear everything and start over?')){ S = blank(); save(); ROLE = null; saveRole(); render(); } }
 
+// ---------- Ready-made colleges ----------
+// A real college shipped with the app (data/*.js). `open` = straight to the student view, used by index.html?sample=…
+function loadCollege(key, open){
+  const d = window.TW_SAMPLES && window.TW_SAMPLES[key];
+  if(!d) return toast('That college is not available in this copy.');
+  if(!open && (S.subjects.length || S.classes.length) && !confirm('Replace your current data with the GNDEC CSE timetable?')) return;
+  S = Object.assign(blank(), JSON.parse(JSON.stringify(d))); S.settings = Object.assign(blank().settings, d.settings);
+  save();
+  if(open){ ROLE = {type:'viewer'}; phone = {by:'class', id:(S.classes[0] || {}).id, day:null}; }
+  else ROLE = null;
+  saveRole(); render();
+  toast(`${S.settings.college}: ${S.classes.length} classes loaded`);
+}
+
 // ---------- Demo college ----------
 function loadSample(){
   if((S.subjects.length || S.classes.length) && !confirm('Replace your current data with the demo college?')) return;
@@ -1782,7 +1801,13 @@ function readHash(){
   render();
 }
 window.addEventListener('hashchange', readHash);
-load(); readHash();
+load();
+{ // index.html?sample=gndec opens a ready-made college straight away (only replaces it the first time).
+  const key = new URLSearchParams(location.search).get('sample');
+  const d = key && window.TW_SAMPLES && window.TW_SAMPLES[key];
+  if(d && !location.hash.startsWith('#v=') && S.settings.college !== d.settings.college) loadCollege(key, true);
+}
+readHash();
 </script>
 
 </body>
