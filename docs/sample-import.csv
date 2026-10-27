@@ -1,0 +1,10 @@
+Class,Department,Students,Subject,Teacher,Teacher Department,Kind,Times per week,Periods each
+CSE-2A,CSE,60,Data Structures,Dr. Mehta,CSE,Theory,4,1
+CSE-2A,CSE,60,DS Lab,Dr. Mehta,CSE,Lab,1,2
+CSE-2A,CSE,60,Maths III,Prof. Gill,Maths,Theory,4,1
+CSE-2A,CSE,60,DBMS,Prof. Kaur,CSE,Theory,3,1
+CSE-2A,CSE,60,DBMS Lab,Prof. Kaur,CSE,Lab,1,2
+CSE-2B,CSE,58,Data Structures,Prof. Iyer,CSE,Theory,4,1
+CSE-2B,CSE,58,Maths III,Prof. Gill,Maths,Theory,4,1
+CSE-2B,CSE,58,OOP,Dr. Rao,CSE,Theory,3,1
+CSE-2B,CSE,58,OOP Lab,Dr. Rao,CSE,Lab,1,2

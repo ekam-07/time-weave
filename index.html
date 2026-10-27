@@ -1,0 +1,1789 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TimeWeave</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
+<style>
+  :root{--paper:#fafaf8;--card:#fff;--ink:#141414;--muted:#8a8984;--line:#ebe9e4;--coral:#e4572e;--sun:#f5f2ea;--mint:#e6f2eb;--sky:#eef1f6;--lilac:#f0eef6;--soft:#f4f3ef}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:'Inter',system-ui,sans-serif;font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+  h1,h2,h3,.brand{font-family:'Instrument Serif',Georgia,serif;font-weight:400;letter-spacing:-.01em;margin:0}
+  a{color:var(--ink);text-decoration:underline;text-underline-offset:3px}
+  .muted{color:var(--muted)}
+  .center{text-align:center}
+  .hidden{display:none}
+
+  /* Layout */
+  .layout{display:grid;grid-template-columns:220px 1fr;min-height:100vh}
+  .rail{background:var(--card);border-right:1px solid var(--line);padding:28px 16px;position:sticky;top:0;height:100vh;display:flex;flex-direction:column;gap:2px;overflow:auto}
+  .brand{font-size:26px;margin:0 10px 22px}
+  .who{padding:0 10px;font-size:13px;font-weight:500;margin-bottom:8px}
+  .who small{display:block;color:var(--muted);font-weight:400}
+  .rg{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin:20px 10px 6px}
+  .ri{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:none;border:0;color:var(--muted);padding:8px 10px;border-radius:8px;font:inherit;font-size:14px;cursor:pointer;white-space:nowrap}
+  .ri:hover{color:var(--ink)}
+  .ri.on{background:var(--soft);color:var(--ink);font-weight:500}
+  .ri .ic{width:16px;font-size:12px;text-align:center;flex:none}
+  .ri.on .ic{color:var(--coral)}
+  .ri .ok{margin-left:auto;color:var(--muted);font-size:12px}
+  .railfoot{margin-top:auto;padding-top:12px}
+  main{padding:48px 56px;max-width:1080px;width:100%;min-width:0}
+
+  /* Page heading */
+  .ph{margin-bottom:28px}
+  .eyebrow{display:block;color:var(--coral);font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px}
+  .ph h2{font-size:44px;line-height:1.05}
+  .ph p{margin:10px 0 0;color:var(--muted);max-width:600px}
+
+  /* Cards and buttons */
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:24px;margin-bottom:16px}
+  .card.flat{background:transparent}
+  .card h3{font-size:24px;margin-bottom:4px}
+  .row{display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+  .btn{font:inherit;font-size:14px;font-weight:500;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:8px 16px;border-radius:99px;cursor:pointer;transition:border-color .15s,background .15s;white-space:nowrap}
+  .btn:hover{border-color:var(--ink)}
+  .btn:disabled{opacity:.4;pointer-events:none}
+  .btn.hot,.btn.ink{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .btn.hot:hover,.btn.ink:hover{background:#333}
+  .btn.sun{border-color:var(--ink)}
+  .btn.big{padding:12px 26px;font-size:15px}
+  .btn.sm{padding:5px 12px;font-size:13px}
+  .x{border:0;background:none;font-size:20px;cursor:pointer;color:#c4c2bc;line-height:1}
+  .x:hover{color:var(--coral)}
+
+  /* Forms and tables */
+  input,select{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font:inherit;font-size:14px;background:var(--card);color:var(--ink)}
+  input:focus,select:focus{outline:none;border-color:var(--ink)}
+  label.f{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}
+  .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:18px}
+  table{width:100%;border-collapse:collapse}
+  th,td{text-align:left;padding:8px 6px;vertical-align:middle}
+  th{font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);border-bottom:1px solid var(--line)}
+  tbody tr+tr td{border-top:1px solid var(--line)}
+  .empty{text-align:center;color:var(--muted);padding:32px}
+  .days{display:flex;gap:8px;flex-wrap:wrap}
+  .days label{border:1px solid var(--line);border-radius:99px;padding:6px 16px;cursor:pointer;font-size:14px;user-select:none;color:var(--muted)}
+  .days label:has(input:checked){background:var(--ink);border-color:var(--ink);color:#fff}
+  .days input{display:none}
+  .foot{display:flex;justify-content:space-between;margin-top:24px;gap:8px}
+  .addbar{margin-top:16px;display:flex;gap:10px;flex-wrap:wrap}
+
+  /* Messages, tags, chips */
+  .msg{padding:10px 14px;border-radius:10px;margin:8px 0;font-size:14px;border-left:3px solid var(--muted);background:var(--soft)}
+  .msg.warn{border-left-color:#d9a400}
+  .msg.bad{border-left-color:var(--coral);background:#fdf1ec}
+  .msg.ok{border-left-color:#2f8f5b}
+  .tag{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:99px;padding:2px 10px;font-size:12px;color:var(--muted);white-space:nowrap}
+  .tag.g{color:#2f8f5b;border-color:#cfe6d9}
+  .tag.y{color:#9a7400;border-color:#efe2b5}
+  .chips{display:flex;gap:8px;flex-wrap:wrap}
+  .chip{font:inherit;font-size:13px;border:1px solid var(--line);background:var(--card);border-radius:99px;padding:6px 14px;cursor:pointer;text-align:left;color:var(--ink)}
+  .chip:hover{border-color:var(--ink)}
+  .chip small{color:var(--muted)}
+  .chip.on{background:var(--ink);border-color:var(--ink);color:#fff}
+  .chip.on small{color:#bbb}
+
+  /* Stats */
+  .stats{display:grid;grid-template-columns:repeat(6,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-bottom:16px}
+  .stat{background:var(--card);padding:18px 20px}
+  .stat b{display:block;font-family:'Instrument Serif',Georgia,serif;font-weight:400;font-size:40px;line-height:1.1}
+  .stat span{font-size:12px;color:var(--muted)}
+  .s1 b{color:var(--coral)}
+
+  /* Timetable grid */
+  .toolbar{display:flex;gap:14px;flex-wrap:wrap;align-items:end;margin-bottom:20px}
+  .toolbar>div{min-width:170px}
+  .toolbar .acts{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;min-width:0}
+  .tt{overflow-x:auto}
+  .tt table{min-width:720px;table-layout:fixed;border-collapse:separate;border-spacing:3px}
+  .tt th{border:0;text-align:center;padding:4px;letter-spacing:.04em}
+  .tt th small{font-weight:400;text-transform:none;letter-spacing:0}
+  .tt td{border:0!important;padding:0;height:64px;text-align:center;font-size:12px;background:#f7f6f2;border-radius:8px}
+  .tt td.day{background:none;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.08em;width:52px}
+  .tt td.off{background:repeating-linear-gradient(45deg,#efede7,#efede7 3px,#f7f6f2 3px,#f7f6f2 8px);color:var(--muted)}
+  .cell{border-radius:8px;padding:6px 8px;height:100%;display:flex;flex-direction:column;justify-content:center;line-height:1.3;box-shadow:inset 3px 0 0 rgba(20,20,20,.18);text-align:left}
+  .cell b{font-weight:600}
+  .cell small{color:#5c5b57}
+  .brk{background:none!important;color:var(--muted);font-size:10px;letter-spacing:.2em;writing-mode:vertical-rl;transform:rotate(180deg)}
+  .bar{height:6px;background:var(--soft);border-radius:99px;overflow:hidden}
+  .bar i{display:block;height:100%;background:var(--ink);border-radius:99px}
+
+  /* Modal and toast */
+  .modal{position:fixed;inset:0;background:rgba(20,20,20,.3);display:flex;align-items:center;justify-content:center;padding:16px;z-index:9}
+  .modal .card{max-width:760px;width:100%;max-height:90vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.15)}
+  .slotgrid td{cursor:pointer;height:36px;text-align:center;border:1px solid var(--line)!important;background:var(--card);border-radius:6px;color:#fff}
+  .slotgrid td.x{background:var(--coral);border-color:var(--coral)!important}
+  #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:99px;font-size:14px;z-index:10;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90vw}
+  #toast.show{opacity:1}
+
+  /* Login */
+  .login{max-width:980px;margin:0 auto;padding:80px 20px}
+  .hero{text-align:center;margin-bottom:48px}
+  .logo{display:none}
+  .hero h1{font-size:clamp(48px,8vw,80px);line-height:1}
+  .hero p{font-size:17px;color:var(--muted);margin:12px 0 0}
+  .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-bottom:28px}
+  .tile{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:26px;display:flex;flex-direction:column;gap:12px;transition:border-color .15s}
+  .tile:hover{border-color:var(--ink)}
+  .tile h3{font-size:28px}
+  .tile p{margin:0;color:var(--muted);font-size:14px}
+  .tile .btn{margin-top:auto}
+
+  /* Phone view */
+  .phonewrap{max-width:440px;margin:0 auto;padding:20px 16px}
+  .ptop{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+  .ptop b{font-family:'Instrument Serif',Georgia,serif;font-weight:400;font-size:22px}
+  .seg{display:flex;background:var(--soft);border-radius:99px;padding:3px;margin-bottom:10px}
+  .seg button{flex:1;border:0;background:none;font:inherit;font-size:14px;padding:8px;border-radius:99px;cursor:pointer;color:var(--muted)}
+  .seg button.on{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+  .phead{margin:20px 0 14px}
+  .phead small{color:var(--muted);text-transform:uppercase;letter-spacing:.1em;font-size:11px}
+  .phead h2{font-size:40px;line-height:1.1}
+  .pdays{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:14px}
+  .pdays .chip{flex:none;text-align:center;padding:8px 14px}
+  .pdays .chip i{display:block;font-style:normal;font-size:9px;letter-spacing:.08em;color:var(--coral)}
+  .pcard{display:grid;grid-template-columns:56px 1fr;gap:14px;align-items:center;border-radius:12px;padding:14px;margin-bottom:8px;box-shadow:inset 3px 0 0 rgba(20,20,20,.18)}
+  .pcard b{display:block;font-size:15px;font-weight:600}
+  .pcard small{color:#5c5b57}
+  .ptime{font-weight:600;font-size:14px;line-height:1.3}
+  .ptime small{font-weight:400}
+  .pfree{border:1px dashed var(--line);border-radius:12px;padding:10px 14px;margin-bottom:8px;color:var(--muted);font-size:13px}
+  .pfree span{font-weight:600;margin-right:12px}
+  .plunch{color:var(--muted);font-size:11px;letter-spacing:.2em;text-transform:uppercase;text-align:center;padding:8px;margin-bottom:8px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+  .pempty{text-align:center;padding:30px 10px;color:var(--muted)}
+  .frame{border:1px solid var(--line);border-radius:36px;padding:14px 6px;width:320px;max-width:100%;height:600px;overflow:auto;background:var(--paper);box-shadow:0 20px 50px rgba(0,0,0,.08)}
+  .frame .phonewrap{padding:6px}
+  .sharegrid{display:grid;grid-template-columns:1fr 340px;gap:28px;align-items:start}
+  #qr{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px;display:inline-block;min-height:60px}
+  .best{color:#2f8f5b;font-weight:600}
+
+  @media print{.rail,.toolbar,.noprint,.foot{display:none!important}.layout{display:block}body{background:#fff}.card{border:0;padding:0}main{padding:0}}
+  @media (max-width:1100px){.stats{grid-template-columns:repeat(3,1fr)}}
+  @media (max-width:820px){
+    .layout{grid-template-columns:1fr}
+    .rail{position:sticky;height:auto;flex-direction:row;align-items:center;overflow-x:auto;padding:10px 12px;border-right:0;border-bottom:1px solid var(--line);z-index:5}
+    .brand{margin:0 10px 0 2px;font-size:22px;white-space:nowrap}
+    .who,.rg{display:none}
+    .railfoot{margin:0;padding:0}
+    .ri{width:auto}
+    main{padding:24px 16px}
+    .ph h2{font-size:36px}
+    .card{padding:18px}
+    .sharegrid{grid-template-columns:1fr}
+  }
+  .badge{background:var(--coral);color:#fff!important;border-radius:99px;font-size:11px;padding:0 7px;line-height:18px}
+  .tt td.brkcell{background:none;border:1px dashed var(--line)!important;color:var(--muted);font-size:11px;letter-spacing:.15em;text-transform:uppercase}
+  .pflag{display:inline-block;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--coral);font-weight:600;margin-bottom:2px}
+  .pnote{display:block;margin-top:4px;font-style:italic}
+  .pcard.f-away{opacity:.55}
+  .pcard.f-cover,.pcard.f-sub{box-shadow:inset 3px 0 0 var(--coral)}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<div id="modal"></div>
+<div id="toast"></div>
+<input type="file" id="fileIn" accept=".json" class="hidden" onchange="importJSON(event)">
+<input type="file" id="sheetIn" accept=".csv,.xlsx,.xls" class="hidden" onchange="importSheet(event)">
+<input type="file" id="fetIn" accept=".html,.htm" class="hidden" onchange="openFET(event)">
+
+<script>
+const PAGES = {
+  setup:   {t:'College',     g:'Set up',    i:'1', roles:['admin']},
+  rooms:   {t:'Rooms',       g:'Set up',    i:'2', roles:['admin']},
+  teachers:{t:'Teachers',    g:'Set up',    i:'3', roles:['admin','dept']},
+  classes: {t:'Classes',     g:'Set up',    i:'4', roles:['admin','dept']},
+  subjects:{t:'Subjects',    g:'Set up',    i:'5', roles:['admin','dept']},
+  tracks:  {t:'Tracks',      g:'Set up',    i:'6', roles:['admin']},
+  result:  {t:'Timetable',   g:'Timetable', i:'▦', roles:['admin','dept']},
+  subs:    {t:'Absences',    g:'Timetable', i:'⇄', roles:['admin','dept']},
+  versions:{t:'Compare',     g:'Timetable', i:'⚖', roles:['admin']},
+  share:   {t:'Share',       g:'Timetable', i:'↗', roles:['admin']}
+};
+const ALL_DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat'];
+const PREFS = [['any','Any time'],['nofirst','No first period'],['nolast','No last period'],['morning','Mornings only'],['afternoon','Afternoons only']];
+const REASONS = ['Sick','Personal','Official duty','Training','Other'];
+// Professional-elective tracks (from 5th semester). Each track lists its syllabus courses for reference.
+const TRACKS = [
+  {id:'t1', name:'Software Engineering', short:'SE', courses:['Software Project Management', 'Software Testing and Quality Assurance (+ lab)', 'Software Metrics', 'Component Based Development (+ lab)', 'Applied Cloud Computing (+ lab)']},
+  {id:'t2', name:'Network Technologies', short:'Networks', courses:['Advanced Computer Networks', 'Network Security and Cryptography (+ lab)', 'Blockchain Technology', 'Internet of Things (+ lab)', 'Applied Cloud Computing (+ lab)']},
+  {id:'t3', name:'Data Management', short:'Data', courses:['Statistics for Data Science', 'Advanced Database Management Systems (+ lab)', 'Big Data', 'Data Science (+ lab)', 'Applied Cloud Computing (+ lab)']},
+  {id:'t4', name:'Machine Intelligence', short:'MI', courses:['Information Retrieval', 'Natural Language Processing (+ lab)', 'Human Computer Interaction', 'Deep Learning (+ lab)', 'Applied Cloud Computing (+ lab)']},
+  {id:'t5', name:'Algorithm Design and Programming', short:'Algo & Prog', courses:['System Programming', 'Java Programming (+ lab)', 'Parallel and Distributed Algorithms', 'Mobile Application Development (+ lab)', 'Applied Cloud Computing (+ lab)']}
+];
+// Which track each elective in the timetable belongs to, by its short code. SC and CV are Machine Intelligence as the
+// department confirmed; the rest are suggestions for the admin to check on the Tracks page.
+const TRACK_MAP = {SC:['t4'], CV:['t4'], GAI:['t4'], CNS:['t2'], SDN:['t2'], DWBI:['t3'], DWDM:['t3'], OOAD:['t1'], DAAA:['t5'], WT:['t5'], ACC:['t1','t2','t3']};
+const PALETTE = ['#f6e6de','#f3eddb','#e2efe7','#e2e8f3','#ebe5f3','#f3e3e9','#e0eeed','#eee7da'];
+const uid = () => Math.random().toString(36).slice(2, 9);
+const range = n => Array.from({length:n}, (_,i) => i);
+const byId = (list, id) => list.find(x => x.id === id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+const blank = () => ({
+  settings:{college:'', days:['Mon','Tue','Wed','Thu','Fri'], periods:7, start:'08:30', length:60,
+            breakMode:'staggered', breakSlots:[2,3], breakAfter:4, breakLength:30, maxStreak:3, adminPin:'1234'},
+  departments:[], rooms:[], teachers:[], classes:[], subjects:[], result:null, versions:[], absences:[],
+  tracks:{prefixes:'D3, D4', list:JSON.parse(JSON.stringify(TRACKS)), map:JSON.parse(JSON.stringify(TRACK_MAP))}
+});
+let S = blank(), ROLE = null, SHARED = null, page = 'setup';
+let view = {by:'class', id:null};
+let subs = {absenceId:null};
+let phone = {by:'class', id:null, day:null};
+let share = {by:'class', id:null};
+
+// ---------- Storage ----------
+function save(){ try{ localStorage.setItem('timeweave', JSON.stringify(S)); }catch(e){} }
+function load(){
+  try{ const d = JSON.parse(localStorage.getItem('timeweave')); if(d){ S = Object.assign(blank(), d); S.settings = Object.assign(blank().settings, d.settings); } }catch(e){}
+  try{ ROLE = JSON.parse(sessionStorage.getItem('tw-role')); }catch(e){}
+}
+function saveRole(){ try{ sessionStorage.setItem('tw-role', JSON.stringify(ROLE)); }catch(e){} }
+function changed(){ S.result = null; save(); }
+function toast(text){ const t = document.getElementById('toast'); t.textContent = text; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 2800); }
+
+// ---------- Dates ----------
+const iso = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+const parseIso = s => { const [y,m,d] = String(s).split('-').map(Number); return new Date(y, m-1, d); };
+const dayIdxOfDate = s => S.settings.days.indexOf(ALL_DAYS[(parseIso(s).getDay() + 6) % 7]);
+const niceDate = s => parseIso(s).toLocaleDateString(undefined, {weekday:'short', day:'numeric', month:'short'});
+const todayIdx = () => S.settings.days.indexOf(ALL_DAYS[(new Date().getDay() + 6) % 7]);
+function weekDate(di){
+  const now = new Date(), mon = new Date(now.getFullYear(), now.getMonth(), now.getDate() - (now.getDay() + 6) % 7);
+  return iso(new Date(mon.getFullYear(), mon.getMonth(), mon.getDate() + ALL_DAYS.indexOf(S.settings.days[di])));
+}
+function nextWorkingDate(){
+  const now = new Date();
+  for(let i=0; i<8; i++){ const d = iso(new Date(now.getFullYear(), now.getMonth(), now.getDate() + i)); if(dayIdxOfDate(d) >= 0) return d; }
+  return iso(now);
+}
+
+// ---------- Roles ----------
+const isAdmin = () => ROLE && ROLE.type === 'admin';
+const myDept = () => S.departments.find(d => d.name === ROLE.dept) || {};
+const myPages = () => Object.keys(PAGES).filter(k => PAGES[k].roles.includes(ROLE.type));
+function inScope(listName, x){
+  if(isAdmin()) return true;
+  if(listName === 'teachers' || listName === 'classes') return x.dept === ROLE.dept;
+  if(listName === 'subjects') return (byId(S.classes, x.classId)||{}).dept === ROLE.dept;
+  return false;
+}
+function loginAdmin(){
+  if(document.getElementById('apin').value !== String(S.settings.adminPin)) return loginMsg('Wrong admin PIN.');
+  ROLE = {type:'admin'}; page = 'setup'; saveRole(); render();
+}
+function loginDept(){
+  const name = document.getElementById('ddept').value, d = S.departments.find(x => x.name === name);
+  if(!d || document.getElementById('dpin').value !== String(d.pin)) return loginMsg('Wrong department PIN.');
+  ROLE = {type:'dept', dept:name}; page = 'teachers'; saveRole(); render();
+}
+function loginViewer(){ ROLE = {type:'viewer'}; saveRole(); render(); }
+function loginMsg(m){ document.getElementById('loginMsg').innerHTML = `<div class="msg bad center">${esc(m)}</div>`; }
+function logout(){ ROLE = null; saveRole(); render(); }
+
+// ---------- Shell ----------
+function go(id){ page = id; render(); window.scrollTo(0,0); }
+function render(){
+  const root = document.getElementById('root');
+  if(SHARED){ root.innerHTML = sharedPage(); return; }
+  if(!ROLE){ root.innerHTML = pageLogin(); return; }
+  if(ROLE.type === 'viewer'){ root.innerHTML = viewerPage(); return; }
+  if(ROLE.type === 'dept' && !S.departments.some(d => d.name === ROLE.dept)){ logout(); return; }
+  if(!myPages().includes(page)) page = myPages()[0];
+  const fn = {setup:pageSetup, rooms:pageRooms, teachers:pageTeachers, classes:pageClasses, subjects:pageSubjects, tracks:pageTracks,
+              result:pageResult, subs:pageSubs, versions:pageVersions, share:pageShare}[page];
+  root.innerHTML = `<div class="layout"><aside class="rail">${rail()}</aside><main>${fn()}</main></div>`;
+  if(page === 'share') drawQR();
+}
+function rail(){
+  const groups = {};
+  myPages().forEach(k => (groups[PAGES[k].g] = groups[PAGES[k].g] || []).push(k));
+  const open = openAbsences().length;
+  return `<div class="brand">TimeWeave</div>
+    <div class="who">${isAdmin() ? 'College admin' : esc(ROLE.dept) + ' department'}<small>${esc(S.settings.college || 'Your college')}</small></div>
+    ${Object.entries(groups).map(([g, ks]) => `<div class="rg">${g}</div>` + ks.map(k =>
+      `<button class="ri ${k===page?'on':''}" onclick="go('${k}')"><span class="ic">${PAGES[k].i}</span>${PAGES[k].t}${
+        k === 'subs' && open ? `<span class="ok badge">${open}</span>` : isDone(k) ? '<span class="ok">✓</span>' : ''}</button>`).join('')).join('')}
+    <div class="railfoot"><button class="ri" onclick="logout()"><span class="ic">↩</span>Switch user</button></div>`;
+}
+function isDone(k){
+  const mine = l => S[l].some(x => inScope(l, x));
+  return ({setup: S.settings.college && S.departments.length, rooms: S.rooms.length, teachers: mine('teachers'),
+           classes: mine('classes'), subjects: mine('subjects'), tracks: Object.keys(S.tracks.map).length, result: S.result && S.result.placed})[k];
+}
+function pageHead(title, hint){
+  const ps = myPages().filter(k => PAGES[k].g === 'Set up'), i = ps.indexOf(page);
+  return `<div class="ph">${i >= 0 ? `<span class="eyebrow">Step ${i+1} of ${ps.length}</span>` : ''}<h2>${title}</h2><p>${hint}</p></div>`;
+}
+function nextBtns(){
+  const ps = myPages(), i = ps.indexOf(page);
+  const prev = i > 0 ? `<button class="btn" onclick="go('${ps[i-1]}')">← Back</button>` : '<span></span>';
+  const next = i < ps.length-1 ? `<button class="btn ink" onclick="go('${ps[i+1]}')">Next: ${PAGES[ps[i+1]].t} →</button>` : '';
+  return `<div class="foot">${prev}${next}</div>`;
+}
+
+// ---------- Login ----------
+function pageLogin(){
+  const demo = S.settings.college === 'Demo Institute of Technology';
+  return `<div class="login">
+    <div class="hero"><div class="logo">▦</div><h1>TimeWeave</h1><p>Clash-free college timetables, made in minutes.</p></div>
+    <div class="tiles">
+      <div class="tile t1"><h3>College admin</h3><p>Set up rooms and make one timetable for every department.</p>
+        <input id="apin" type="password" placeholder="Admin PIN" onkeydown="if(event.key==='Enter')loginAdmin()">
+        <button class="btn ink" onclick="loginAdmin()">Enter →</button></div>
+      <div class="tile t2"><h3>Department head</h3><p>Add your own teachers, classes and subjects.</p>
+        ${S.departments.length ? `<select id="ddept">${S.departments.map(d => `<option>${esc(d.name)}</option>`).join('')}</select>
+          <input id="dpin" type="password" placeholder="Department PIN" onkeydown="if(event.key==='Enter')loginDept()">
+          <button class="btn ink" onclick="loginDept()">Enter →</button>`
+        : `<p class="muted">The admin hasn't added departments yet.</p>`}</div>
+      <div class="tile t3"><h3>Student or teacher</h3><p>See your timetable on your phone. Teachers can report an absence here.</p>
+        <button class="btn ink" onclick="loginViewer()">Open my timetable →</button></div>
+    </div>
+    <div id="loginMsg"></div>
+    <p class="muted center">${demo ? 'Demo PINs: admin <b>1234</b> · CSE <b>1111</b> · ECE <b>2222</b> · Maths <b>3333</b>'
+      : `First time? The admin PIN is <b>${S.settings.college ? '…' : '1234'}</b>.`}
+      · <a href="#" onclick="loadSample();return false">Load a demo college</a></p>
+  </div>`;
+}
+
+// ---------- Editable tables ----------
+// cols: {f, label, type:'text'|'number'|'select', opts:()=>[[value,label]], w, ph}
+function editTable(listName, cols, extra){
+  const list = S[listName].filter(x => inScope(listName, x));
+  const rows = list.map(item => `<tr>${cols.map(c => `<td style="${c.w?'width:'+c.w:'min-width:150px'}">${field(listName, item, c)}</td>`).join('')}
+    ${extra ? `<td style="width:1%">${extra(item)}</td>` : ''}
+    <td style="width:36px"><button class="x" title="Remove" onclick="removeRow('${listName}','${item.id}')">×</button></td></tr>`).join('');
+  return `<div style="overflow-x:auto"><table><thead><tr>${cols.map(c => `<th>${c.label}</th>`).join('')}${extra?'<th></th>':''}<th></th></tr></thead>
+    <tbody>${rows || `<tr><td colspan="${cols.length+2}" class="empty">Nothing here yet — add the first one below.</td></tr>`}</tbody></table></div>`;
+}
+function field(listName, item, c){
+  if(c.show && !c.show(item)) return '<span class="muted">—</span>';
+  const on = `onchange="setField('${listName}','${item.id}','${c.f}',this.value,'${c.type||'text'}')"`;
+  if(c.type === 'select')
+    return `<select ${on}>${c.opts().map(([v,l]) => `<option value="${esc(v)}" ${String(item[c.f]??'')===String(v)?'selected':''}>${esc(l)}</option>`).join('')}</select>`;
+  return `<input type="${c.type||'text'}" ${c.type==='number'?'min="0"':''} value="${esc(item[c.f])}" placeholder="${esc(c.ph||'')}" ${on}>`;
+}
+function setField(listName, id, f, v, type){
+  const it = byId(S[listName], id); if(!it) return;
+  if(listName === 'departments' && f === 'name'){
+    const old = it.name;
+    [...S.classes, ...S.teachers, ...S.rooms].forEach(x => { if(x.dept === old) x.dept = v; });
+  }
+  it[f] = type === 'number' ? Number(v) : v;
+  if(listName === 'departments' && f !== 'name'){ save(); return; }
+  changed();
+  if(listName === 'subjects' && f === 'type'){ it.length = v === 'Lab' ? 2 : 1; render(); }
+  if(listName === 'departments') render();
+}
+function addRow(listName, obj){ S[listName].push(Object.assign({id:uid()}, obj)); changed(); render(); }
+function removeRow(listName, id){
+  if(listName === 'departments'){ const d = byId(S.departments, id); if(d && !confirm(`Remove ${d.name || 'this'} department? Its classes and teachers stay.`)) return; }
+  S[listName] = S[listName].filter(x => x.id !== id); changed(); render();
+}
+const deptNames = () => S.departments.map(d => d.name).filter(Boolean);
+const deptOpts = () => [['','— choose —'], ...deptNames().map(d => [d,d])];
+
+// ---------- Step: College ----------
+const staggered = () => S.settings.breakMode === 'staggered' && S.settings.breakSlots.length > 0;
+function pageSetup(){
+  const st = S.settings, times = periodTimes();
+  return pageHead('Your college', 'Your working week, breaks, and the departments that will share rooms. Each department head gets a PIN to add their own data.') + `
+  <div class="card">
+    <div class="grid2">
+      <div><label class="f">College name</label><input value="${esc(st.college)}" placeholder="e.g. City Engineering College" onchange="setS('college',this.value)"></div>
+      <div><label class="f">College starts at</label><input type="time" value="${st.start}" onchange="setS('start',this.value,true)"></div>
+      <div><label class="f">One period lasts (minutes)</label><input type="number" min="10" value="${st.length}" onchange="setS('length',+this.value,true)"></div>
+      <div><label class="f">Periods per day</label><input type="number" min="1" max="12" value="${st.periods}" onchange="setS('periods',+this.value,true)"></div>
+      <div><label class="f">A teacher teaches at most … periods in a row</label><input type="number" min="0" max="12" value="${st.maxStreak}" onchange="setS('maxStreak',+this.value)" title="0 = no limit"></div>
+    </div>
+    <label class="f" style="margin-top:18px">Working days</label>
+    <div class="days">${ALL_DAYS.map(d => `<label><input type="checkbox" ${st.days.includes(d)?'checked':''} onchange="toggleDay('${d}',this.checked)">${d}</label>`).join('')}</div>
+    <p class="muted" style="margin:16px 0 0;font-size:13px">College day: ${times[0].split('–')[0]} to ${times[times.length-1].split('–')[1]}. Classes are packed into the morning so students finish as early as possible.</p>
+  </div>
+  <div class="card">
+    <h3>Breaks</h3>
+    <div class="seg" style="max-width:520px;margin:12px 0 16px">
+      <button class="${st.breakMode==='staggered'?'on':''}" onclick="setS('breakMode','staggered',true)">Classes take turns</button>
+      <button class="${st.breakMode==='same'?'on':''}" onclick="setS('breakMode','same',true)">Everyone at once</button>
+    </div>
+    ${st.breakMode === 'staggered' ? `
+      <p class="muted" style="margin-top:0">Some classes take their break at one time, others later. Rooms never sit empty during break, so you need fewer rooms.</p>
+      <label class="f">Breaks can happen at</label>
+      <div class="days">${range(st.periods).map(p => `<label><input type="checkbox" ${st.breakSlots.includes(p)?'checked':''} onchange="toggleBreak(${p},this.checked)">${times[p].split('–')[0]}</label>`).join('')}</div>
+      <p class="muted" style="font-size:13px">Each class gets one break of one period. Classes are split evenly between these times. You can fix a class's break on the Classes page.</p>`
+    : `<div class="grid2">
+      <div><label class="f">Break comes after period</label><input type="number" min="0" value="${st.breakAfter}" onchange="setS('breakAfter',+this.value,true)"></div>
+      <div><label class="f">Break lasts (minutes)</label><input type="number" min="0" value="${st.breakLength}" onchange="setS('breakLength',+this.value,true)"></div></div>`}
+  </div>
+  <div class="card">
+    <h3>Departments</h3><p class="muted" style="margin-top:0">Give each head their PIN. They log in and fill in only their own department.</p>
+    ${editTable('departments', [
+      {f:'name', label:'Department', ph:'e.g. CSE'},
+      {f:'head', label:'Head of department', ph:'e.g. Dr. Mehta'},
+      {f:'pin', label:'Login PIN', ph:'4 digits', w:'130px'}
+    ], d => `<span class="tag ${d.ready?'g':'y'}">${d.ready?'✓ Ready':'Editing'}</span>`)}
+    <div class="addbar"><button class="btn" onclick="addRow('departments',{name:'',head:'',pin:String(1000+Math.floor(Math.random()*9000)),ready:false})">+ Add department</button></div>
+  </div>
+  <div class="card flat row"><div><b>Admin PIN</b><div class="muted">Used to log in as admin.</div></div>
+    <input style="max-width:160px" value="${esc(st.adminPin)}" onchange="S.settings.adminPin=this.value;save();toast('Admin PIN changed')"></div>
+  ${S.importInfo ? `<div class="card flat"><b>Imported from ${esc(S.importInfo.source)}</b>
+    <div class="muted">${S.importInfo.classes} classes and ${S.importInfo.lessons} lessons, read ${esc(S.importInfo.at)}. ${S.importInfo.fixed} shared hours (electives, projects, other years) are kept as they are.
+    The website does not list seats or class sizes, so we assumed <b>60 students per class, 36 seats per lab and 72 per classroom</b>. Please correct them on the Rooms and Classes pages.</div></div>` : ''}
+  <div class="card flat row"><div><b>Already have a timetable?</b><div class="muted">Import the HTML your college exported from FET (the students / groups file). We read every class, teacher, subject and room.</div></div>
+    <button class="btn sm sun" onclick="document.getElementById('fetIn').click()">Import FET timetable</button></div>
+  <div class="card flat row"><div><b>Backup</b><div class="muted">Save everything to a file, or open a saved file.</div></div>
+    <div class="chips"><button class="btn sm" onclick="exportJSON()">Save file</button><button class="btn sm" onclick="document.getElementById('fileIn').click()">Open file</button><button class="btn sm" onclick="resetAll()">Start over</button></div></div>
+  ${nextBtns()}`;
+}
+function setS(k, v, rerender){ S.settings[k] = v; changed(); if(rerender) render(); }
+function toggleDay(d, on){
+  const set = new Set(S.settings.days); on ? set.add(d) : set.delete(d);
+  S.settings.days = ALL_DAYS.filter(x => set.has(x)); changed();
+}
+function toggleBreak(p, on){
+  const set = new Set(S.settings.breakSlots); on ? set.add(p) : set.delete(p);
+  S.settings.breakSlots = [...set].sort((a,b) => a - b); changed(); render();
+}
+
+// ---------- Step: Rooms ----------
+function pageRooms(){
+  const totalSeats = S.rooms.reduce((a,r) => a + (+r.capacity || 0), 0), biggest = Math.max(0, ...S.classes.map(c => +c.size || 0));
+  return pageHead('Rooms', 'Every classroom and lab, and how many students it can seat. A class is only placed in a room big enough for it. Rooms marked <b>Shared</b>, like seminar halls or common labs, can be used by any department.') + `
+  ${S.rooms.length ? `<div class="card flat row"><div><b>${S.rooms.length} rooms · ${totalSeats} seats in total</b><div class="muted">${biggest ? `Your biggest class has ${biggest} students.` : 'Add classes to see which rooms fit them.'}</div></div></div>` : ''}
+  <div class="card">${editTable('rooms', [
+      {f:'name', label:'Room', ph:'e.g. Room 101'},
+      {f:'type', label:'Type', type:'select', opts:() => [['Classroom','Classroom'],['Lab','Lab']], w:'140px'},
+      {f:'capacity', label:'Capacity (seats)', type:'number', w:'130px'},
+      {f:'dept', label:'Belongs to', type:'select', opts:() => [['','Shared (anyone)'], ...deptNames().map(d => [d,d])], w:'180px'}
+    ], r => { const users = S.classes.filter(c => !r.dept || c.dept === r.dept), small = users.filter(c => +c.size > +r.capacity).length;
+      return !(+r.capacity > 0) ? '<span class="tag y">Enter seats</span>' : !users.length ? '' : small ? `<span class="tag y">Too small for ${small} class${small > 1 ? 'es' : ''}</span>` : '<span class="tag g">Fits all its classes</span>'; })}
+    <div class="addbar"><button class="btn" onclick="addRow('rooms',{name:'',type:'Classroom',capacity:60,dept:''})">+ Add room</button></div>
+  </div>${nextBtns()}`;
+}
+
+// ---------- Step: Teachers ----------
+function pageTeachers(){
+  const cols = [{f:'name', label:'Name', ph:'e.g. Dr. Sharma'}];
+  if(isAdmin()) cols.push({f:'dept', label:'Department', type:'select', opts:deptOpts, w:'150px'});
+  cols.push({f:'maxPerDay', label:'Max classes / day', type:'number', w:'130px'},
+            {f:'pref', label:'Prefers', type:'select', opts:() => PREFS, w:'170px'});
+  return pageHead('Teachers', 'The most classes each teacher should take in a day, and when they prefer to teach. Preferences are wishes; <b>Time off</b> is strict.') + `
+  <div class="card">${editTable('teachers', cols, t => `<button class="btn sm" onclick="openTimeOff('${t.id}')">Time off${t.off && t.off.length ? ` · ${t.off.length}` : ''}</button>`)}
+    <div class="addbar"><button class="btn" onclick="addRow('teachers',{name:'',dept:${isAdmin()?"''":`'${esc(ROLE.dept)}'`},maxPerDay:4,pref:'any',off:[]})">+ Add teacher</button></div>
+  </div>${nextBtns()}`;
+}
+function openTimeOff(tid){
+  const t = byId(S.teachers, tid), st = S.settings, times = periodTimes(); t.off = t.off || [];
+  document.getElementById('modal').innerHTML = `<div class="modal" onclick="if(event.target===this)closeModal()"><div class="card">
+    <h3>Time off · ${esc(t.name || 'Teacher')}</h3><p class="muted">Tap the hours this teacher can <b>not</b> teach.</p>
+    <table class="slotgrid" style="border-collapse:separate;border-spacing:4px"><tr><th></th>${range(st.periods).map(p => `<th style="text-align:center">${times[p].split('–')[0]}</th>`).join('')}</tr>
+    ${st.days.map((d,di) => `<tr><td style="border:0!important;background:none;cursor:default;color:var(--ink)"><b>${d}</b></td>${range(st.periods).map(p => {
+      const k = `${di}-${p}`; return `<td class="${t.off.includes(k)?'x':''}" onclick="toggleOff('${tid}','${k}')">${t.off.includes(k)?'✕':''}</td>`; }).join('')}</tr>`).join('')}</table>
+    <div class="foot"><span></span><button class="btn hot" onclick="closeModal()">Done</button></div></div></div>`;
+}
+function toggleOff(tid, k){
+  const t = byId(S.teachers, tid);
+  t.off = t.off.includes(k) ? t.off.filter(x => x !== k) : [...t.off, k];
+  changed(); openTimeOff(tid);
+}
+function closeModal(){ document.getElementById('modal').innerHTML = ''; render(); }
+
+// ---------- Step: Classes ----------
+function pageClasses(){
+  const times = periodTimes();
+  const cols = [{f:'name', label:'Class', ph:'e.g. CSE-2A'}];
+  if(isAdmin()) cols.push({f:'dept', label:'Department', type:'select', opts:deptOpts, w:'170px'});
+  cols.push({f:'size', label:'Students', type:'number', w:'110px'});
+  if(staggered()) cols.push({f:'breakAt', label:'Break at', type:'select', w:'150px',
+    opts:() => [['auto','Auto (balanced)'], ...S.settings.breakSlots.map(p => [p, times[p].split('–')[0]])]});
+  return pageHead('Classes', 'A class is a group of students who sit together, like "CSE 2nd year – A".') + `
+  <div class="card">${editTable('classes', cols)}
+    <div class="addbar"><button class="btn" onclick="addRow('classes',{name:'',dept:${isAdmin()?"''":`'${esc(ROLE.dept)}'`},size:60,breakAt:'auto'})">+ Add class</button></div>
+  </div>${nextBtns()}`;
+}
+
+// ---------- Step: Subjects ----------
+function pageSubjects(){
+  const myClasses = S.classes.filter(c => inScope('classes', c));
+  const clsOpts = () => [['','— choose —'], ...myClasses.map(c => [c.id, c.name || '(unnamed)'])];
+  const tOpts = () => [['','— choose —'], ...S.teachers.map(t => [t.id, `${t.name || '(unnamed)'}${t.dept ? ' · ' + t.dept : ''}`])];
+  return pageHead('Subjects', 'What each class studies, who teaches it, and how often. Labs use a lab room for 2 periods in a row.') + `
+  <div class="card flat row"><div><b>Have it in Excel?</b><div class="muted">Upload one sheet and we'll create the classes, teachers and subjects for you.</div></div>
+    <div class="chips"><button class="btn sm" onclick="downloadTemplate()">Get template</button><button class="btn sm sun" onclick="document.getElementById('sheetIn').click()">Upload Excel / CSV</button></div></div>
+  ${!myClasses.length || !S.teachers.length ? `<div class="msg warn">Add at least one class and one teacher first, or upload a sheet.</div>` : ''}
+  <div class="card">${editTable('subjects', [
+      {f:'classId', label:'Class', type:'select', opts:clsOpts, w:'140px'},
+      {f:'name', label:'Subject', ph:'e.g. Maths'},
+      {f:'teacherId', label:'Teacher', type:'select', opts:tOpts, w:'190px'},
+      {f:'type', label:'Kind', type:'select', opts:() => [['Theory','Theory'],['Lab','Lab']], w:'105px'},
+      {f:'perWeek', label:'Times / week', type:'number', w:'95px'},
+      {f:'length', label:'Periods each', type:'number', w:'95px'},
+      {f:'batches', label:'Batches', type:'number', ph:'Auto', w:'85px', show:s => s.type === 'Lab' || +s.batches > 1},
+      {f:'teacherB', label:'Teacher for other batch', type:'select', opts:tOpts, w:'190px', show:s => s.type === 'Lab' || +s.batches > 1},
+      {f:'coTeacher', label:'Co-teacher', type:'select', opts:tOpts, w:'190px', show:s => s.type === 'Lab' || !!s.coTeacher}
+    ])}
+    <p class="muted" style="font-size:13px;margin-bottom:0"><b>Lab batches:</b> if a class is bigger than its lab, it is split into batches automatically (leave "Batches" on Auto). With a second teacher, batches use two labs at the same time; otherwise they take turns.</p>
+    <div class="addbar"><button class="btn" onclick="addRow('subjects',{classId:(S.classes.find(c=>inScope('classes',c))||{}).id||'',name:'',teacherId:'',type:'Theory',perWeek:3,length:1})">+ Add subject</button></div>
+  </div>${nextBtns()}`;
+}
+
+// ---------- Step: Tracks (electives from 3rd year) ----------
+// An elective is known by its short code, the first word of its name ("SC L", "SC Lab P" → SC).
+const codeOf = s => ((s && (s.raw || s.name)) || '').trim().split(/\s+/)[0].toUpperCase();
+// Which group of students takes it, from the website's group names (D3 CS A2 → "2").
+const digitOf = s => s && s.groupNames ? ((s.groupNames[0] || '').match(/(\d+)$/) || [])[1] || '' : '';
+const trackClass = c => !!c && (S.tracks.prefixes || '').split(',').map(t => t.trim()).filter(Boolean).some(p => (c.name || '').startsWith(p));
+const trackOf = s => S.tracks.map[codeOf(s)] || [];
+function electiveCodes(){
+  const ids = new Set(S.classes.filter(trackClass).map(c => c.id)), codes = {};
+  S.subjects.filter(s => s.groups && s.groups.some(g => ids.has(g.classId))).forEach(s => (codes[codeOf(s)] = codes[codeOf(s)] || new Set()).add(s.raw || s.name));
+  return codes;
+}
+function pageTracks(){
+  const T = S.tracks, codes = electiveCodes();
+  const years = [...new Set(S.classes.filter(trackClass).map(c => c.name.split(' ')[0]))];
+  const warns = [];
+  years.forEach(y => {
+    const ids = new Set(S.classes.filter(c => c.name.split(' ')[0] === y).map(c => c.id));
+    const here = new Set(S.subjects.filter(s => s.groups && s.groups.some(g => ids.has(g.classId))).map(codeOf));
+    T.list.forEach(t => { if(![...here].some(k => (T.map[k] || []).includes(t.id))) warns.push(`${t.name} has no elective ticked in ${y}.`); });
+  });
+  const rows = Object.entries(codes).sort((a, b) => a[0].localeCompare(b[0])).map(([k, names]) => `<tr>
+    <td><b>${esc(k)}</b><br><small class="muted">${esc([...names].join(', '))}</small></td>
+    ${T.list.map(t => `<td style="text-align:center"><input type="checkbox" style="width:auto" ${(T.map[k] || []).includes(t.id) ? 'checked' : ''} onchange="toggleTrack('${esc(k)}','${t.id}',this.checked)"></td>`).join('')}
+    <td><small class="muted">${(T.map[k] || []).length ? '' : 'Everyone takes it'}</small></td></tr>`).join('');
+  return pageHead('Tracks', 'From 3rd year, students follow a track. Tick the track each elective in the timetable belongs to. Students then pick their track on their phone and see only their own electives.') + `
+  <div class="card flat row"><div><b>Tracks apply to</b><div class="muted">Classes whose name starts with these (comma separated). 2nd year is not included.</div></div>
+    <input style="max-width:200px" value="${esc(T.prefixes)}" onchange="S.tracks.prefixes=this.value;save();render()"></div>
+  <div class="card"><h3>Electives in your timetable</h3>
+    ${Object.keys(codes).length ? `<div style="overflow-x:auto"><table><thead><tr><th>Elective</th>${T.list.map(t => `<th style="text-align:center" title="${esc(t.name)}">${esc(t.short)}</th>`).join('')}<th></th></tr></thead><tbody>${rows}</tbody></table></div>`
+      : '<p class="muted">No electives found yet. Import or add the timetable of a class listed above.</p>'}
+    <p class="muted" style="font-size:13px;margin-bottom:0">SC and CV are Machine Intelligence as you told us; the other ticks are suggestions, so please check them. An elective with no tick is shown to every student.</p>
+    ${warns.map(w => `<div class="msg warn">${esc(w)}</div>`).join('')}
+  </div>
+  <div class="card"><h3>Tracks and their courses</h3><div class="grid2">${T.list.map(t => `<div><b>${esc(t.name)}</b>
+    <ul class="muted" style="margin:6px 0 0;padding-left:18px;font-size:13px">${t.courses.map(n => `<li>${esc(n)}</li>`).join('')}</ul></div>`).join('')}</div></div>
+  ${nextBtns()}`;
+}
+function toggleTrack(code, id, on){
+  const m = S.tracks.map, list = new Set(m[code] || []);
+  on ? list.add(id) : list.delete(id);
+  m[code] = [...list]; if(!m[code].length) delete m[code];
+  save(); render();
+}
+// Group choices a student needs when their track's elective runs in more than one group (e.g. GAI Group A / Group B).
+function trackGroupOptions(c, track){
+  const byCode = {};
+  if(!track) return {};
+  S.subjects.filter(s => s.groups && s.groups.some(g => g.classId === c.id) && trackOf(s).includes(track)).forEach(s => {
+    const dg = digitOf(s); if(!dg) return;
+    const o = byCode[codeOf(s)] = byCode[codeOf(s)] || {}; (o[dg] = o[dg] || []).push(s.raw || s.name);
+  });
+  const out = {};
+  Object.entries(byCode).forEach(([k, byDigit]) => { const ds = Object.keys(byDigit).sort(); if(ds.length > 1)
+    out[k] = ds.map(dg => ({digit:dg, label:`${byDigit[dg].find(n => !/lab/i.test(n)) || 'Group ' + dg} · ${(c.name || '').split(' ').pop()}${dg}`})); });
+  return out;
+}
+// Keeps a lesson in a student's view. Electives (3rd year on) follow the chosen track and group; every other lesson
+// given to only part of the class (a batch, a lab group) follows the chosen subsection, e.g. B1.
+function trackKeeps(x, by, id, pick){
+  if(by !== 'class' || !pick) return true;
+  const s = byId(S.subjects, x.subjectId), tr = trackClass(byId(S.classes, id)) ? trackOf(s) : [];
+  if(tr.length){
+    if(!pick.track) return true;
+    if(!tr.includes(pick.track)) return false;
+    const g = (pick.groups || {})[codeOf(s)];
+    return !g || digitOf(s) === g;
+  }
+  const mine = occOf(x).filter(o => o.classId === id);
+  return !pick.sub || mine.some(o => !o.batch || o.batch === pick.sub);
+}
+// The subsections of a class that its lessons are split into (B1, B2…), electives of a track year left out.
+function subsectionsOf(c){
+  const set = new Set(), tracked = trackClass(c);
+  ((S.result && S.result.placed) || []).forEach(x => {
+    if(tracked && trackOf(byId(S.subjects, x.subjectId)).length) return;
+    occOf(x).forEach(o => { if(o.classId === c.id && o.batch) set.add(o.batch); });
+  });
+  return [...set].sort();
+}
+const subName = (c, letter) => (S.importInfo ? (c.name || '').split(' ').pop() + ('ABCDEFGH'.indexOf(letter) + 1) : 'Batch ' + letter);
+function loadTrack(){
+  try{ const t = JSON.parse(localStorage.getItem('tw-track') || '{}'); phone.track = t.track || ''; phone.groups = t.groups || {}; phone.subs = t.subs || {}; }
+  catch(e){ phone.track = ''; phone.groups = {}; phone.subs = {}; }
+}
+function saveTrack(){ try{ localStorage.setItem('tw-track', JSON.stringify({track:phone.track, groups:phone.groups, subs:phone.subs})); }catch(e){} }
+
+// ---------- Excel / CSV import ----------
+function downloadTemplate(){
+  const rows = ['Class,Department,Students,Subject,Teacher,Teacher Department,Kind,Times per week,Periods each',
+    'CSE-2A,CSE,60,Data Structures,Dr. Mehta,CSE,Theory,4,1',
+    'CSE-2A,CSE,60,DS Lab,Dr. Mehta,CSE,Lab,1,2',
+    'CSE-2A,CSE,60,Maths III,Prof. Gill,Maths,Theory,4,1'];
+  download(rows.join('\n'), 'timeweave-template.csv', 'text/csv');
+}
+function importSheet(e){
+  const f = e.target.files[0]; e.target.value = ''; if(!f) return;
+  if(/\.xlsx?$/i.test(f.name)){
+    if(!window.XLSX) return toast('Excel files need internet. Save the sheet as CSV and try again.');
+    f.arrayBuffer().then(buf => { const wb = XLSX.read(buf); applyImport(XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {defval:''})); });
+  } else f.text().then(t => applyImport(parseCSV(t)));
+}
+function parseCSV(text){
+  const rows = []; let row = [], cur = '', q = false;
+  for(let i=0; i<text.length; i++){
+    const ch = text[i];
+    if(q){ if(ch === '"'){ if(text[i+1] === '"'){ cur += '"'; i++; } else q = false; } else cur += ch; }
+    else if(ch === '"') q = true;
+    else if(ch === ','){ row.push(cur); cur = ''; }
+    else if(ch === '\n' || ch === '\r'){ if(ch === '\r' && text[i+1] === '\n') i++; row.push(cur); rows.push(row); row = []; cur = ''; }
+    else cur += ch;
+  }
+  if(cur || row.length){ row.push(cur); rows.push(row); }
+  const head = rows.shift() || [];
+  return rows.filter(r => r.some(v => String(v).trim())).map(r => Object.fromEntries(head.map((h,i) => [h, r[i] ?? ''])));
+}
+function applyImport(rows){
+  const norm = o => { const m = {}; for(const k in o) m[k.toLowerCase().replace(/[^a-z]/g,'')] = String(o[k]).trim(); return m; };
+  let nc = 0, nt = 0, ns = 0, skipped = 0;
+  const ensureDept = name => { if(name && !S.departments.some(d => d.name === name)) S.departments.push({id:uid(), name, head:'', pin:String(1000+Math.floor(Math.random()*9000)), ready:false}); };
+  rows.map(norm).forEach(r => {
+    let dept = r.department || r.dept || '';
+    if(!isAdmin()){ if(dept && dept !== ROLE.dept){ skipped++; return; } dept = ROLE.dept; }
+    if(!r.class || !r.subject || !r.teacher){ skipped++; return; }
+    const tdept = r.teacherdepartment || r.teacherdept || dept;
+    if(isAdmin()){ ensureDept(dept); ensureDept(tdept); }
+    let c = S.classes.find(x => x.name === r.class);
+    if(!c){ c = {id:uid(), name:r.class, dept, size:+r.students || 60, breakAt:'auto'}; S.classes.push(c); nc++; }
+    let t = S.teachers.find(x => x.name === r.teacher);
+    if(!t){ t = {id:uid(), name:r.teacher, dept:tdept, maxPerDay:4, pref:'any', off:[]}; S.teachers.push(t); nt++; }
+    const lab = /lab|prac/i.test(r.kind || '');
+    S.subjects.push({id:uid(), classId:c.id, name:r.subject, teacherId:t.id, type:lab ? 'Lab' : 'Theory',
+      perWeek:+(r.timesperweek || r.perweek) || (lab ? 1 : 3), length:+(r.periodseach || r.length) || (lab ? 2 : 1)});
+    ns++;
+  });
+  changed(); render();
+  toast(`Added ${nc} classes, ${nt} teachers, ${ns} subjects${skipped ? ` · skipped ${skipped} rows` : ''}`);
+}
+
+// ---------- Import from FET ----------
+// FET is free timetabling software used by many colleges; its "groups_days_horizontal" HTML export lists every lesson.
+// The sections you pick are re-scheduled by TimeWeave. Everything else (other years, electives shared across
+// sections, projects) stays exactly where it is: those hours are blocked for the teachers, rooms and classes involved.
+const FET_DAYS = {Monday:'Mon', Tuesday:'Tue', Wednesday:'Wed', Thursday:'Thu', Friday:'Fri', Saturday:'Sat'};
+const fc = s => String(s || '').replace(/\s+/g, ' ').trim();
+const fsplit = s => fc(s).split(/\s*,\s*/).filter(Boolean);
+const isGroupList = s => /^(D\d+|M\d+|PHD)\s+\S+/i.test(s);
+const mostCommon = arr => { const n = {}; arr.forEach(v => n[v] = (n[v] || 0) + 1); return Object.entries(n).sort((a,b) => b[1] - a[1])[0][0]; };
+let FET = null;
+
+function fetCell(td, owner){
+  const txt = fc(td.textContent);
+  if(!txt || txt === '---') return {kind:'free'};
+  if(txt === '-x-') return {kind:'break'};
+  const det = td.querySelector('table.detailed');
+  if(det){
+    const rows = [...det.querySelectorAll('tr')].map(r => [...r.children].map(c => fc(c.textContent)));
+    return {kind:'lesson', entries:rows[0].map((g, i) => ({groups:fsplit(g), subject:rows[1]?.[i] || '', teachers:fsplit(rows[2]?.[i] || ''), room:rows[3]?.[i] || ''}))};
+  }
+  const parts = td.innerHTML.split(/<br\s*\/?>/i).map(s => fc(s.replace(/<[^>]+>/g, ''))).filter(Boolean);
+  let groups = [owner];
+  if(parts.length > 1 && isGroupList(parts[0])) groups = fsplit(parts.shift());
+  else if(parts.length >= 4 && /^(D\d+|M\d+|PHD)$/i.test(parts[0])) parts.shift();   // short label of the owner group, e.g. "M1"
+  const looksTeacher = s => /\b(Dr|Pf|Prof|Mr|Ms|Mrs)\.|\(/.test(s);
+  const subject = parts[0] || '';
+  const teacher = parts.length >= 3 ? parts[1] : parts.length === 2 && looksTeacher(parts[1]) ? parts[1] : '';
+  const room = parts.length >= 3 ? parts[parts.length - 1] : parts.length === 2 && !looksTeacher(parts[1]) ? parts[1] : '';
+  return {kind:'lesson', entries:[{groups, subject, teachers:fsplit(teacher), room}]};
+}
+function parseFET(html){
+  const doc = new DOMParser().parseFromString(html, 'text/html'), groups = [];
+  doc.querySelectorAll('table[id]').forEach(t => {
+    const name = fc(t.querySelector('thead th[colspan]')?.textContent); if(!name) return;
+    const days = [...t.querySelectorAll('thead th.xAxis')].map(th => fc(th.textContent));
+    const rows = [...t.querySelectorAll(':scope > tbody > tr')].filter(tr => tr.querySelector(':scope > th'));
+    const slots = rows.map(tr => fc(tr.querySelector(':scope > th').textContent));
+    const grid = slots.map(() => Array(days.length).fill(null));
+    rows.forEach((tr, r) => {
+      let col = 0;
+      [...tr.children].filter(c => c.tagName === 'TD').forEach(td => {
+        while(col < days.length && grid[r][col]) col++;     // skip cells filled by a rowspan from above
+        const cell = fetCell(td, name);
+        for(let k=0; k<(td.rowSpan || 1) && r + k < slots.length; k++) grid[r+k][col] = cell;
+        col++;
+      });
+    });
+    groups.push({name, days, slots, grid});
+  });
+  return {institution:fc(doc.querySelector('caption')?.textContent) || '', groups};
+}
+function openFET(e){
+  const f = e.target.files[0]; e.target.value = ''; if(!f) return;
+  f.text().then(html => fetPicker(html, f.name));
+}
+function fetPicker(html, source){
+  const parsed = parseFET(html);
+  if(!parsed.groups.length) return toast('No FET timetable found in that file. Use the "groups" / students HTML export.');
+  FET = {...parsed, source};
+  const years = {};
+  parsed.groups.forEach(g => (years[g.name.split(' ')[0]] = years[g.name.split(' ')[0]] || []).push(g.name));
+  document.getElementById('modal').innerHTML = `<div class="modal" onclick="if(event.target===this)closeModal()"><div class="card">
+    <h3>Import timetable</h3><p class="muted">${esc(parsed.institution)} · ${parsed.groups.length} groups found in ${esc(source)}.
+      Pick the classes TimeWeave should schedule. Everything else is kept exactly as it is and blocks those teachers and rooms.</p>
+    ${Object.entries(years).map(([y, names]) => `<div style="margin:14px 0"><label class="f"><input type="checkbox" style="width:auto" ${y === 'D2' ? 'checked' : ''}
+        onchange="document.querySelectorAll('.fetg[data-y=\\'${esc(y)}\\']').forEach(i=>i.checked=this.checked)"> <b>${esc(y)}</b> · ${names.length} groups</label>
+      <div class="chips">${names.map(n => `<label class="chip"><input type="checkbox" class="fetg" data-y="${esc(y)}" value="${esc(n)}" style="width:auto" ${y === 'D2' ? 'checked' : ''}> ${esc(n)}</label>`).join('')}</div></div>`).join('')}
+    <div class="foot"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn hot" onclick="fetRun()">Import</button></div></div></div>`;
+}
+function fetRun(){
+  const chosen = new Set([...document.querySelectorAll('.fetg:checked')].map(i => i.value));
+  if(!chosen.size) return toast('Pick at least one class.');
+  if((S.subjects.length || S.classes.length) && !confirm('This replaces your current data with the imported timetable. Continue?')) return;
+  const rep = fetImport(FET, chosen);
+  document.getElementById('modal').innerHTML = '';
+  go('setup');
+  toast(`Imported ${rep.classes} classes, ${rep.teachers} teachers, ${rep.subjects} subjects, ${rep.rooms} rooms`);
+}
+function fetImport(fet, chosen){
+  const groups = fet.groups, g0 = groups[0];
+  const mins = s => { const [h, m] = s.trim().split(':').map(Number); return h*60 + m; };
+  const [a, b] = g0.slots[0].split('-');
+  const D = blank();
+  if(S.tracks) D.tracks = S.tracks;   // keep the admin's track mapping across re-imports
+  Object.assign(D.settings, {college:(fet.institution || 'Imported college') + ' · CSE', days:g0.days.map(d => FET_DAYS[d] || d.slice(0,3)),
+    periods:g0.slots.length, start:a.trim(), length:mins(b) - mins(a), maxStreak:S.settings.maxStreak, adminPin:S.settings.adminPin});
+  // Some years list each batch as its own table (D1 CS A1, D1 CS A2) with no table for the section itself;
+  // those tables are joined into one section ("D1 CS A") whose batches they become.
+  const names = new Set(groups.map(g => g.name)), base = g => g.replace(/\d+$/, '');
+  const parentOf = g => base(g) !== g && !names.has(base(g)) && [...chosen].some(n => n !== g && base(n) === base(g)) ? base(g) : g;
+  const sections = new Set([...chosen].map(parentOf));
+  const sectionOf = g => chosen.has(g) ? parentOf(g) : sections.has(base(g)) ? base(g) : null;
+  const batchOf = (g, sec) => g === sec ? '' : 'ABCDEFGH'[(+g.slice(sec.length) || 1) - 1];
+  const subgroups = {};
+  groups.forEach(g => g.grid.flat().forEach(cell => cell && cell.kind === 'lesson' && cell.entries.forEach(e => e.groups.forEach(n => {
+    const s = sectionOf(n); if(s && n !== s) (subgroups[s] = subgroups[s] || new Set()).add(n); }))));
+  [...chosen].forEach(n => { const s = parentOf(n); if(s !== n) (subgroups[s] = subgroups[s] || new Set()).add(n); });
+
+  // 1. Unique lessons: the same lesson shows up in the table of every group taking it.
+  const lessons = new Map(), breaks = {};
+  groups.forEach(g => g.grid.forEach((row, p) => row.forEach((cell, d) => {
+    if(!cell) return;
+    if(cell.kind === 'break' && chosen.has(g.name)) (breaks[sectionOf(g.name)] = breaks[sectionOf(g.name)] || []).push({d, p});
+    if(cell.kind !== 'lesson') return;
+    cell.entries.forEach(e => { const k = [d, p, e.subject, e.teachers.join('+'), e.room, e.groups.join('+')].join('|'); if(!lessons.has(k)) lessons.set(k, {d, p, ...e}); });
+  })));
+
+  // 2. A lesson for one chosen class (or one of its batches) with one teacher and a room is re-scheduled; anything else is fixed.
+  const sched = [], fixed = {}, tOff = {}, rOff = {};
+  const block = (map, key, sl) => { if(key) (map[key] = map[key] || new Set()).add(sl); };
+  lessons.forEach(L => {
+    const sl = L.d + '-' + L.p, secs = [...new Set(L.groups.map(sectionOf))];
+    // Up to two teachers (a teacher plus a co-teacher) can be re-scheduled; bigger panels, like project reviews, stay fixed.
+    // One section only: a single group is the whole class or one batch; all of its batches together are the whole class.
+    const sec = secs.length === 1 ? secs[0] : null, subs = sec && subgroups[sec] ? subgroups[sec] : new Set();
+    const batch = !sec ? null : L.groups.length === 1 ? batchOf(L.groups[0], sec)
+      : L.groups.every(n => subs.has(n)) && L.groups.length === subs.size ? '' : null;
+    const teach = L.teachers.length >= 1 && L.teachers.length <= 2 && L.room;
+    const who = {teacher:L.teachers[L.teachers.length - 1], co:L.teachers.length > 1 ? L.teachers[0] : ''};
+    if(batch !== null && teach) sched.push({...L, ...who, section:sec, batch});
+    // Combined lesson: groups from several sections together, e.g. a 4th-year track (A1+B1+C1+D1+E1) or an elective.
+    else if(teach && secs.every(Boolean)){
+      const occ = L.groups.map(n => { const s = sectionOf(n); return {section:s, batch:n === s ? '' : batchOf(n, s)}; });
+      sched.push({...L, ...who, section:occ[0].section, batch:'', occ, gkey:L.groups.join('+')});
+    }
+    else {
+      secs.filter(Boolean).forEach(s => { const m = fixed[s] = fixed[s] || {}; (m[sl] = m[sl] || []).push(L); });
+      L.teachers.forEach(t => block(tOff, t, sl)); block(rOff, L.room, sl);
+    }
+  });
+
+  // The same lesson written once per batch table (same time, teacher and room for every batch) is one whole-class lesson.
+  const same = {};
+  sched.forEach(L => { if(L.batch){ const k = [L.section, L.d, L.p, L.subject, L.teacher, L.room].join('|'); (same[k] = same[k] || []).push(L); } });
+  Object.values(same).forEach(list => {
+    if(list.length > 1 && list.length === (subgroups[list[0].section] || new Set()).size){ list.slice(1).forEach(L => sched.splice(sched.indexOf(L), 1)); list[0].batch = ''; }
+  });
+  // 3. Back-to-back periods of the same lesson become one longer lesson (labs are usually 2 periods).
+  sched.sort((x, y) => x.section.localeCompare(y.section) || x.batch.localeCompare(y.batch) || x.subject.localeCompare(y.subject)
+    || (x.gkey || '').localeCompare(y.gkey || '') || x.teacher.localeCompare(y.teacher) || x.d - y.d || x.p - y.p);
+  const sessions = [];
+  sched.forEach(L => {
+    const last = sessions[sessions.length - 1];
+    if(last && last.section === L.section && last.batch === L.batch && last.subject === L.subject && last.teacher === L.teacher && last.co === L.co && last.gkey === L.gkey && last.room === L.room && last.d === L.d && last.p + last.len === L.p) last.len++;
+    else sessions.push({...L, len:1});
+  });
+
+  // 4. Rooms, teachers, classes and subjects. Seats and class sizes are not published, so sensible defaults are used.
+  const ids = {}, idOf = (kind, name) => ids[kind + name] = ids[kind + name] || uid();
+  D.rooms = [...new Set(sessions.map(s => s.room))].map(n => ({id:idOf('r', n), name:n, type:/LAB/i.test(n) ? 'Lab' : 'Classroom', capacity:/LAB/i.test(n) ? 36 : 72, dept:'', off:[...(rOff[n] || [])]}));
+  const perDay = {}; sessions.forEach(s => [s.teacher, s.co].filter(Boolean).forEach(n => perDay[n + '|' + s.d] = (perDay[n + '|' + s.d] || 0) + s.len));
+  D.teachers = [...new Set(sessions.flatMap(s => [s.teacher, s.co]).filter(Boolean))].map(n => ({id:idOf('t', n), name:n, dept:/App\.? ?Sci/i.test(n) ? 'App. Sci.' : 'CSE',
+    maxPerDay:Math.max(4, ...Object.entries(perDay).filter(([k]) => k.startsWith(n + '|')).map(([, v]) => v)), pref:'any', off:[...(tOff[n] || [])]}));
+  // "-x-" marks any hour a class is unavailable. The break is the "-x-" hour that falls between the class's lessons
+  // on most days; every other "-x-" hour is kept as a fixed "Not available" hour.
+  const busyAt = {};
+  sessions.forEach(s => (s.occ ? [...new Set(s.occ.map(o => o.section))] : [s.section]).forEach(sec => {
+    for(let k=0; k<s.len; k++) (busyAt[sec+'|'+s.d] = busyAt[sec+'|'+s.d] || new Set()).add(s.p + k); }));
+  Object.entries(fixed).forEach(([s, m]) => Object.keys(m).forEach(sl => { const [d, p] = sl.split('-').map(Number); (busyAt[s+'|'+d] = busyAt[s+'|'+d] || new Set()).add(p); }));
+  // Breaks differ from day to day in real timetables, so each "-x-" hour is kept exactly where it is.
+  const inside = (n, d, p) => { const b = busyAt[n+'|'+d]; return b && [...b].some(q => q < p) && [...b].some(q => q > p); };
+  // Fixed hours keep what the website shows: subject, groups, teachers and room.
+  const short = gs => gs.map(g => g.split(' ').pop()).join(', ');
+  D.classes = [...sections].map(n => {
+    const f = Object.entries(fixed[n] || {}).map(([sl, list]) => ({sl, label:[...new Set(list.map(L => L.subject))].join(' / '),
+      sub:list.map(L => [short(L.groups), L.teachers.join(', '), L.room].filter(Boolean).join(' · ')).join(' | ')}));
+    (breaks[n] || []).forEach(({d, p}) => { if(!f.some(x => x.sl === d+'-'+p)) f.push({sl:d+'-'+p, label:inside(n, d, p) ? 'Break' : 'Not available'}); });
+    return {id:idOf('c', n), name:n, dept:'CSE', size:60, breakAt:'auto', fixed:f};
+  });
+  Object.assign(D.settings, {breakMode:'same', breakAfter:0, breakSlots:[]});
+
+  const nice = s => s.replace(/\s+L\.?$/, '').replace(/\s+T\.?$/, ' Tutorial').replace(/\s+P\.?$/, '').trim();
+  const maxBatch = {}; sessions.forEach(s => { if(s.batch) maxBatch[s.section] = Math.max(maxBatch[s.section] || 1, 'ABCDEFGH'.indexOf(s.batch) + 1); });
+  const bySub = {}; sessions.forEach(s => { const k = s.section + '\u0001' + s.subject + '\u0001' + (s.occ ? 'j' + s.gkey + '|' + s.teacher : s.batch ? 'b' : 'w'); (bySub[k] = bySub[k] || []).push(s); });
+  const groupLabel = occ => { const ls = [...new Set(occ.map(o => o.batch))];
+    return ls.length === 1 && ls[0] ? 'group ' + ('ABCDEFGH'.indexOf(ls[0]) + 1) : ls.every(l => !l) ? 'combined' : 'mixed groups'; };
+  const roomCap = n => (D.rooms.find(r => r.name === n) || {}).capacity || 60;
+  const official = [];
+  Object.entries(bySub).forEach(([k, list]) => {
+    const [section, raw, kind] = k.split('\u0001'), c = D.classes.find(x => x.name === section);
+    const by = {}; list.forEach(s => (by[s.batch] = by[s.batch] || []).push(s));
+    const letters = Object.keys(by).sort(), teacherOf = l => mostCommon(by[l].map(s => s.teacher));
+    const subj = {id:uid(), classId:c.id, name:nice(raw), type:/lab/i.test(raw) || /\sP\.?$/.test(raw) ? 'Lab' : 'Theory',
+      perWeek:Math.max(...letters.map(l => by[l].length)), length:+mostCommon(list.map(s => s.len)), teacherId:idOf('t', teacherOf(letters[0])), teacherB:'', batches:0,
+      raw, groupNames:list[0].occ ? list[0].groups : undefined};
+    const cos = list.map(s => s.co).filter(Boolean);
+    subj.coTeacher = cos.length ? idOf('t', mostCommon(cos)) : '';
+    if(kind[0] === 'j'){
+      // Students from several sections; its size is taken from the room it used, since group sizes are not published.
+      subj.name = `${nice(raw)} · ${groupLabel(list[0].occ)}`;
+      subj.groups = list[0].occ.map(o => ({classId:idOf('c', o.section), batch:o.batch}));
+      subj.size = roomCap(mostCommon(list.map(s => s.room)));
+    }
+    if(kind === 'b'){
+      subj.batches = maxBatch[section] || 2;
+      if(letters[1] && teacherOf(letters[1]) !== teacherOf(letters[0])) subj.teacherB = idOf('t', teacherOf(letters[1]));
+    }
+    D.subjects.push(subj);
+    list.forEach(s => official.push({subjectId:subj.id, classId:c.id, teacherId:idOf('t', s.teacher), coTeacherId:s.co ? idOf('t', s.co) : '', roomId:idOf('r', s.room), day:s.d, period:s.p, len:s.len,
+      batch:s.batch, size:subj.size || (s.batch ? Math.ceil(c.size / subj.batches) : c.size), occ:subj.groups}));
+  });
+  // Combined lessons a year runs side by side (e.g. ACC, SC and WT tracks in the same hour, or all electives together)
+  // become one block, so they are scheduled together and leave the other hours free for whole-section lectures.
+  const parent = {}, find = a => parent[a] && parent[a] !== a ? (parent[a] = find(parent[a])) : a;
+  const together = {};
+  official.filter(x => x.occ).forEach(x => {
+    const year = ((D.classes.find(c => c.id === x.occ[0].classId) || {}).name || '').split(' ')[0];
+    const k = [x.day, x.period, x.len, year].join('|'); (together[k] = together[k] || new Set()).add(x.subjectId);
+  });
+  Object.values(together).forEach(set => { const [a, ...rest] = [...set]; rest.forEach(b => { parent[find(b)] = find(a); }); });
+  D.subjects.forEach(s => { if(s.groups) s.block = find(s.id); });
+  D.departments = [...new Set([...D.classes.map(c => c.dept), ...D.teachers.map(t => t.dept)])].map(n => ({id:uid(), name:n, head:'', pin:String(1000 + Math.floor(Math.random()*9000)), ready:true}));
+  const fixedCount = D.classes.reduce((n, c) => n + c.fixed.length, 0);
+  D.importInfo = {source:fet.source, at:new Date().toLocaleString(), classes:D.classes.length, lessons:official.length, fixed:fixedCount};
+
+  // 5. Keep the official timetable as a version so TimeWeave's result can be compared with it.
+  S = D;
+  // needed = what the official timetable actually holds (batches may meet a different number of times).
+  const R = {placed:official, needed:official.length, unplaced:[], breaks:classBreaks(), warns:[], at:'imported from ' + fet.source, stamp:dataStamp()};
+  S.versions = [{id:uid(), name:'Official timetable (imported)', at:new Date().toLocaleString(), result:R, stamp:R.stamp, m:metrics(R)}];
+  S.result = JSON.parse(JSON.stringify(R));
+  save();
+  return {classes:D.classes.length, teachers:D.teachers.length, subjects:D.subjects.length, rooms:D.rooms.length};
+}
+
+// ---------- Checks before generating ----------
+function precheck(){
+  const st = S.settings, errs = [], warns = [], slots = st.days.length * st.periods;
+  const classSlots = st.days.length * (st.periods - (staggered() ? 1 : 0));
+  if(!st.days.length) errs.push('Pick at least one working day.');
+  if(!S.subjects.length) errs.push('Add some subjects first.');
+  S.rooms.filter(r => !(+r.capacity > 0)).forEach(r => errs.push(`Room "${r.name || 'unnamed'}" has no capacity. Enter how many students it seats.`));
+  S.classes.filter(c => !(+c.size > 0)).forEach(c => errs.push(`Class "${c.name || 'unnamed'}" has no student count.`));
+  S.subjects.forEach(s => {
+    const c = byId(S.classes, s.classId), t = byId(S.teachers, s.teacherId), nm = `"${s.name || 'unnamed subject'}"`;
+    if(!c) errs.push(`${nm} has no class chosen.`);
+    if(!t) errs.push(`${nm} has no teacher chosen.`);
+    if(c){
+      const rooms = S.rooms.filter(r => r.type === (s.type === 'Lab' ? 'Lab' : 'Classroom') && (!r.dept || r.dept === c.dept));
+      if(!rooms.length) errs.push(`No ${s.type === 'Lab' ? 'lab' : 'classroom'} is open to ${c.name} (${c.dept || 'no department'}) for ${nm}.`);
+      else { const size = +s.size || Math.ceil(c.size / batchesOf(s, c));
+        if(!rooms.some(r => +r.capacity >= size)) errs.push(`No ${s.type === 'Lab' ? 'lab' : 'room'} is big enough for ${c.name} (${size} students${size < c.size ? ' per batch' : ''}).`); }
+    }
+  });
+  S.classes.forEach(c => {
+    // Combined lessons (tracks, electives) run side by side for different groups, so only the class's own lessons are added up.
+    const need = S.subjects.filter(s => s.classId === c.id && !s.groups).reduce((a,s) => a + s.perWeek * (s.length || 1), 0);
+    const brk = staggered() && classBreaks()[c.id] != null ? st.days.length : 0;
+    const room = slots - brk - (c.fixed || []).length;
+    if(need > 0 && need > room) errs.push(`${c.name} needs ${need} periods but the week only has ${room} free (after breaks${(c.fixed || []).length ? ' and fixed hours' : ''}).`);
+  });
+  const sessions = expandSessions();
+  S.teachers.forEach(t => {
+    const need = sessions.filter(x => x.teacherId === t.id).reduce((a,x) => a + x.len, 0);
+    const free = Math.min(slots - (t.off || []).length, st.days.length * (t.maxPerDay || st.periods));
+    if(need > free) errs.push(`${t.name} has ${need} periods to teach but is free for only ${free}.`);
+    else if(need && need > free * 0.85) warns.push(`${t.name} is very busy (${need} of ${free} free periods).`);
+  });
+  const notReady = S.departments.filter(d => !d.ready).map(d => d.name);
+  if(notReady.length) warns.push(`Not marked ready yet: ${notReady.join(', ')}. You can still make the timetable.`);
+  return {errs:[...new Set(errs)], warns};
+}
+
+// ---------- Scheduler ----------
+// Strict: no teacher/class/room double-booking, time off, max per day, room type/size/department,
+//         each class keeps its break free, labs never split by a break.
+// Wishes: finish early, no empty gaps, teacher preferences, subject spread over the week, light days, best-fit room.
+function prefBroken(pref, p, len){
+  const st = S.settings, P = st.periods, mid = st.breakMode === 'same' && st.breakAfter > 0 ? st.breakAfter : Math.ceil(P/2);
+  if(pref === 'nofirst') return p === 0;
+  if(pref === 'nolast') return p + len === P;
+  if(pref === 'morning') return p + len > mid;
+  if(pref === 'afternoon') return p < mid;
+  return false;
+}
+// Splits classes evenly across the allowed break times (fixed choices first), so rooms stay in use during breaks.
+function classBreaks(){
+  const out = {};
+  if(!staggered()) return out;
+  const slots = S.settings.breakSlots, count = {};
+  slots.forEach(s => count[s] = 0);
+  S.classes.forEach(c => { if(c.breakAt != null && c.breakAt !== 'auto' && slots.includes(+c.breakAt)){ out[c.id] = +c.breakAt; count[+c.breakAt]++; } });
+  S.classes.filter(c => out[c.id] == null)
+    .sort((a,b) => (a.dept || '').localeCompare(b.dept || '') || (a.name || '').localeCompare(b.name || ''))
+    .forEach(c => { const s = slots.reduce((a,b) => count[b] < count[a] ? b : a); out[c.id] = s; count[s]++; });
+  return out;
+}
+// A lab is split into batches when the class is bigger than every lab it may use (or into as many as the admin asked for).
+function batchesOf(s, c){
+  if(!s || !c || s.groups) return 1;
+  if(+s.batches > 0) return +s.batches;
+  if(s.type !== 'Lab') return 1;
+  const cap = Math.max(0, ...S.rooms.filter(r => r.type === 'Lab' && (!r.dept || r.dept === c.dept)).map(r => +r.capacity || 0));
+  return cap && +c.size > cap ? Math.ceil(c.size / cap) : 1;
+}
+// One entry per lesson to place. Batch A gets the subject's teacher; other batches get the "other batch" teacher if set.
+function expandSessions(){
+  const out = [];
+  S.subjects.forEach(s => {
+    const c = byId(S.classes, s.classId); if(!c) return;
+    const B = batchesOf(s, c), len = Math.max(1, s.length || 1);
+    for(let i=0; i<s.perWeek; i++){
+      const co = s.coTeacher && s.coTeacher !== s.teacherId ? s.coTeacher : '';
+      if(B === 1) out.push({s, len, teacherId:s.teacherId, co, size:+s.size || +c.size, batch:'',
+        occ:s.groups ? s.groups.map(g => ({classId:g.classId, batch:g.batch || ''})) : null});
+      else for(let b=0; b<B; b++){ const t = b === 0 ? s.teacherId : (s.teacherB || s.teacherId); out.push({s, len, teacherId:t, co:co !== t ? co : '', size:Math.ceil(c.size / B), batch:'ABCDEFGH'[b]}); }
+    }
+  });
+  return out;
+}
+// Teachers may not teach more than maxStreak periods back to back. A shared break ("everyone at once") resets the count.
+function streakOK(isBusy, p, len){
+  const st = S.settings, max = +st.maxStreak || 0;
+  if(!max) return true;
+  const same = st.breakMode === 'same' && st.breakAfter > 0;
+  let run = len;
+  for(let q = p-1; q >= 0 && isBusy(q) && !(same && q+1 === st.breakAfter); q--) run++;
+  for(let q = p+len; q < st.periods && isBusy(q) && !(same && q === st.breakAfter); q++) run++;
+  return run <= Math.max(max, len);
+}
+// Groups batch lessons of a class into rotation blocks, the way colleges run labs: while Batch A does one lab,
+// Batch B does another (or the same lab with a second teacher) at the same time. Each block is placed as one unit.
+function makeUnits(sessions){
+  const units = [], byClass = {}, blocks = {};
+  sessions.forEach(x => {
+    if(x.s.block) (blocks[x.s.block] = blocks[x.s.block] || []).push(x);
+    else if(!x.batch) units.push({members:[x], len:x.len});
+    else (byClass[x.s.classId] = byClass[x.s.classId] || []).push(x);
+  });
+  // Blocks of combined lessons (tracks, electives): one lesson of each subject per unit, with no shared teacher or group.
+  const overlap = (a, b) => [a.teacherId, a.co].some(t => t && (t === b.teacherId || t === b.co))
+    || (a.occ || []).some(g => (b.occ || []).some(h => g.classId === h.classId && (!g.batch || !h.batch || g.batch === h.batch)));
+  Object.values(blocks).forEach(list => {
+    const bySubj = {}; list.forEach(x => (bySubj[x.s.id] = bySubj[x.s.id] || []).push(x));
+    const ids = Object.keys(bySubj);
+    while(ids.some(id => bySubj[id].length)){
+      const members = [];
+      ids.forEach(id => { const i = bySubj[id].findIndex(x => (!members.length || x.len === members[0].len) && !members.some(m => overlap(m, x)));
+        if(i >= 0) members.push(bySubj[id].splice(i, 1)[0]); });
+      units.push({members, len:members[0].len});
+    }
+  });
+  Object.values(byClass).forEach(list => {
+    const letters = [...new Set(list.map(x => x.batch))].sort(), pool = {};
+    letters.forEach(l => pool[l] = list.filter(x => x.batch === l));
+    letters.forEach(l => {
+      while(pool[l].length){
+        const first = pool[l].shift(), members = [first];
+        letters.filter(o => o !== l).forEach(o => {
+          const fits = pool[o].filter(y => y.len === first.len && !members.some(m => [m.teacherId, m.co].some(t => t && (t === y.teacherId || t === y.co))));
+          const pick = fits.find(y => !members.some(m => m.s.id === y.s.id)) || fits[0];   // prefer a different lab (rotation)
+          if(pick){ pool[o].splice(pool[o].indexOf(pick), 1); members.push(pick); }
+        });
+        units.push({members, len:first.len});
+      }
+    });
+  });
+  return units;
+}
+function makeTimetable(){
+  const pc = precheck();
+  if(pc.errs.length){ S.result = {errors:pc.errs, warns:pc.warns}; save(); go('result'); return; }
+  const st = S.settings, D = st.days.length, P = st.periods, BR = classBreaks(), same = st.breakMode === 'same';
+  const sessions = expandSessions(), units = makeUnits(sessions);
+  units.forEach((u, i) => u.ix = i);
+  const tLoad = {}; sessions.forEach(x => tLoad[x.teacherId] = (tLoad[x.teacherId] || 0) + x.len + ((byId(S.teachers, x.teacherId) || {}).off || []).length / 4);
+
+  let best = null;
+  const started = Date.now();
+  for(let attempt=0; attempt<120; attempt++){
+    if(best && Date.now() - started > 6000) break;   // big colleges: keep the best result found within ~6 seconds
+    const order = units.map(u => ({...u, key:u.len*100 + u.members.length*60 + Math.max(...u.members.map(x => tLoad[x.teacherId])) + Math.random()*8})).sort((a,b) => b.key - a.key);
+    // busy: whole-class, teacher and room slots. part: batch lessons sitting in a class slot (other batches may join if aligned).
+    const busy = new Set(), part = {}, tDay = {}, subjDay = {}, placed = [], unplaced = [], leftUnits = [];
+    S.classes.forEach(c => (c.fixed || []).forEach(f => busy.add('c'+c.id+f.sl)));   // hours kept from an imported timetable
+    let cost = 0;
+    for(const u of order){
+      const len = u.len, c = byId(S.classes, u.members[0].s.classId), br = BR[c.id];
+      const ms = u.members.map(x => ({x, t:byId(S.teachers, x.teacherId), ts:[x.teacherId, x.co].filter(Boolean).map(id => byId(S.teachers, id)),
+        rooms:S.rooms.filter(r => r.type === (x.s.type === 'Lab' ? 'Lab' : 'Classroom') && +r.capacity >= x.size && (!r.dept || r.dept === c.dept))}));
+      const groups = ms.flatMap(m => m.x.occ || [{classId:c.id, batch:m.x.batch}]);
+      const occ = (d, q) => busy.has('c'+c.id+d+'-'+q) || !!part[c.id+'|'+d+'|'+q];
+      let pick = null;
+      for(let d=0; d<D; d++){
+        if(ms.some(m => m.ts.some(t => (tDay[t.id+'|'+d] || 0) + len > (t.maxPerDay || P)))) continue;
+        for(let p=0; p+len<=P; p++){
+          if(same && st.breakAfter > 0 && p < st.breakAfter && p + len > st.breakAfter) continue;
+          if(groups.some(g => { const b = BR[g.classId]; return b != null && p <= b && p + len > b; })) continue;
+          let ok = true, parallel = false;
+          for(let k=0; k<len && ok; k++){
+            const sl = d+'-'+(p+k);
+            // A whole class needs its slot empty; a batch or group may sit beside other batches if they line up.
+            for(const g of groups){
+              const pt = part[g.classId+'|'+d+'|'+(p+k)];
+              if(busy.has('c'+g.classId+sl)) ok = false;
+              else if(pt && !g.batch) ok = false;
+              else if(pt){ if(pt.some(e => e.batch === g.batch)) ok = false; else parallel = true; }
+            }
+            for(const m of ms) for(const t of m.ts) if(busy.has('t'+t.id+sl) || (t.off || []).includes(sl)) ok = false;
+          }
+          if(!ok || ms.some(m => m.ts.some(t => !streakOK(q => busy.has('t'+t.id+d+'-'+q), p, len)))) continue;
+          // One room per member, all different.
+          const rooms = [], taken = new Set(); let roomCost = 0;
+          for(const m of ms){
+            let room = null, rc = 1e9;
+            for(const r of m.rooms){
+              if(taken.has(r.id)) continue;
+              let free = true;
+              for(let k=0; k<len; k++) if(busy.has('r'+r.id+d+'-'+(p+k)) || (r.off || []).includes(d+'-'+(p+k))){ free = false; break; }
+              if(!free) continue;
+              const cst = (r.dept ? 0 : 1.5) + (r.capacity - m.x.size) / 100;
+              if(cst < rc){ rc = cst; room = r; }
+            }
+            if(!room){ rooms.length = 0; break; }
+            rooms.push(room); taken.add(room.id); roomCost += rc;
+          }
+          if(rooms.length !== ms.length) continue;
+          // A lesson next to an existing one (or next to the class's break with a lesson beyond it) leaves no gap.
+          const before = p-1 === br ? p-2 : p-1, after = p+len === br ? p+len+1 : p+len;
+          const dayBusy = range(P).some(q => occ(d, q)), touches = occ(d, before) || occ(d, after);
+          const sc = (parallel ? -6 : 0) + (dayBusy && !touches && !parallel ? 4 : 0) + (p + len) * 0.9
+                   + ms.reduce((a, m) => a + (subjDay[c.id+'|'+m.x.s.id+'|'+m.x.batch+'|'+d] || 0) * 40 + (tDay[m.t.id+'|'+d] || 0) * 1.2 + (prefBroken(m.t.pref, p, len) ? 6 : 0), 0)
+                   + roomCost + Math.random() * 1.5;
+          if(!pick || sc < pick.sc) pick = {d, p, rooms, sc};
+        }
+      }
+      if(!pick){ u.members.forEach(x => unplaced.push(x.s.id + (x.batch ? ':' + x.batch : ''))); leftUnits.push(u); continue; }
+      ms.forEach((m, i) => {
+        const room = pick.rooms[i];
+        for(let k=0; k<len; k++){
+          const sl = pick.d+'-'+(pick.p+k);
+          m.ts.forEach(t => busy.add('t'+t.id+sl)); busy.add('r'+room.id+sl);
+          (m.x.occ || [{classId:c.id, batch:m.x.batch}]).forEach(g => {
+            const key = g.classId+'|'+pick.d+'|'+(pick.p+k);
+            if(g.batch) part[key] = (part[key] || []).concat({batch:g.batch, start:pick.p, len});
+            else busy.add('c'+g.classId+sl);
+          });
+        }
+        m.ts.forEach(t => tDay[t.id+'|'+pick.d] = (tDay[t.id+'|'+pick.d] || 0) + len);
+        const sk = c.id+'|'+m.x.s.id+'|'+m.x.batch+'|'+pick.d; subjDay[sk] = (subjDay[sk] || 0) + 1;
+        placed.push({subjectId:m.x.s.id, classId:c.id, teacherId:m.t.id, coTeacherId:m.x.co || '', roomId:room.id, day:pick.d, period:pick.p, len, batch:m.x.batch, size:m.x.size, unit:u.ix, ...(m.x.occ ? {occ:m.x.occ} : {})});
+      });
+      cost += pick.sc;
+    }
+    const total = unplaced.length * 1000 + cost + gapsOf(placed, BR) * 3;
+    if(!best || total < best.total) best = {placed, unplaced, leftUnits, total};
+    if(!unplaced.length && attempt > 40) break;
+  }
+  const left = best.leftUnits.map(u => u.members.map(x => ({subjectId:x.s.id, classId:x.s.classId, teacherId:x.teacherId, coTeacherId:x.co || '', roomId:'', day:-1, period:-1, len:u.len, batch:x.batch, size:x.size, unit:u.ix, ...(x.occ ? {occ:x.occ} : {})})));
+  const done = improve(best.placed, BR, left);
+  S.result = {placed:done.placed, unplaced:done.still.flatMap(ms => ms.map(m => m.subjectId + (m.batch ? ':' + m.batch : ''))), breaks:BR, warns:pc.warns, at:new Date().toLocaleString(), stamp:dataStamp()};
+  S.absences.forEach(a => a.picks = {});
+  save(); go('result'); toast('Timetable ready');
+}
+// Second pass: move each lesson (or rotation block) to the free slot that makes its class's days shortest and most
+// compact, then try again to fit lessons the first pass could not place. Every strict rule is re-checked against
+// all other lessons, so nothing that was valid becomes invalid.
+function improve(placed, BR, leftovers = []){
+  const st = S.settings, D = st.days.length, P = st.periods, same = st.breakMode === 'same';
+  const classScore = (cid, list) => {
+    const days = {}, seen = {}, br = BR[cid], fx = (byId(S.classes, cid) || {}).fixed || []; let s = 0;
+    list.forEach(x => { for(let k=0; k<x.len; k++) (days[x.day] = days[x.day] || new Set()).add(x.period + k);
+      const key = x.subjectId + (x.batch || '') + '|' + x.day; if(seen[key]) s += 40; seen[key] = 1; });
+    Object.entries(days).forEach(([d, set]) => { const ps = [...set], lo = Math.min(...ps), hi = Math.max(...ps);
+      const held = fx.filter(f => { const [fd, fp] = f.sl.split('-').map(Number); return fd === +d && fp > lo && fp < hi && fp !== br; }).length;
+      s += ((hi - lo + 1) - ps.length - (br != null && br > lo && br < hi ? 1 : 0) - held) * 4 + hi + 1; });
+    return s;
+  };
+  const roomFits = (r, m, c) => r.type === ((byId(S.subjects, m.subjectId) || {}).type === 'Lab' ? 'Lab' : 'Classroom') && +r.capacity >= (m.size || c.size) && (!r.dept || r.dept === c.dept);
+  const ids = m => [m.teacherId, m.coTeacherId].filter(Boolean);
+  // Who and what is busy, from every lesson except the ones being moved.
+  const occupancy = (others, c) => {
+    const o = {tB:new Set(), rB:new Set(), cW:new Set(), cP:{}, tD:{}};
+    others.forEach(x => { for(let k=0; k<x.len; k++){ const sl = x.day+'-'+(x.period+k); ids(x).forEach(id => o.tB.add(id+'|'+sl)); o.rB.add(x.roomId+'|'+sl);
+        occOf(x).forEach(g => { if(g.batch) (o.cP[g.classId+'|'+sl] = o.cP[g.classId+'|'+sl] || []).push({batch:g.batch, start:x.period, len:x.len}); else o.cW.add(g.classId+'|'+sl); }); }
+      ids(x).forEach(id => o.tD[id+'|'+x.day] = (o.tD[id+'|'+x.day] || 0) + x.len); });
+    S.classes.forEach(k => (k.fixed || []).forEach(f => o.cW.add(k.id+'|'+f.sl)));
+    return o;
+  };
+  // Rooms for each member if the lessons may go at (d, p), otherwise null. A teacher's wish is only protected
+  // when the lesson already meets it (from = its current period).
+  const canPlace = (ms, o, c, d, p, from) => {
+    const len = ms[0].len, groups = ms.flatMap(occOf);
+    if(same && st.breakAfter > 0 && p < st.breakAfter && p + len > st.breakAfter) return null;
+    if(groups.some(g => { const b = BR[g.classId]; return b != null && p <= b && p + len > b; })) return null;
+    for(let k=0; k<len; k++){
+      const sl = d+'-'+(p+k);
+      for(const g of groups){
+        const pt = o.cP[g.classId+'|'+sl];
+        if(o.cW.has(g.classId+'|'+sl) || (pt && !g.batch) || (pt && pt.some(e => e.batch === g.batch))) return null;
+      }
+      for(const m of ms) for(const id of ids(m)){ const t = byId(S.teachers, id); if(o.tB.has(id+'|'+sl) || (t.off || []).includes(sl)) return null; }
+    }
+    for(const m of ms){
+      for(const id of ids(m)){ const t = byId(S.teachers, id);
+        if((o.tD[id+'|'+d] || 0) + len > (t.maxPerDay || P) || !streakOK(q => o.tB.has(id+'|'+d+'-'+q), p, len)) return null; }
+      const pref = (byId(S.teachers, m.teacherId) || {}).pref;
+      if(from != null && prefBroken(pref, p, len) && !prefBroken(pref, from, len)) return null;
+    }
+    const rooms = [], taken = new Set();
+    for(const m of ms){
+      const free = r => !taken.has(r.id) && range(len).every(k => !o.rB.has(r.id+'|'+d+'-'+(p+k)) && !(r.off || []).includes(d+'-'+(p+k)));
+      const cur = byId(S.rooms, m.roomId), r = cur && free(cur) ? cur : S.rooms.find(r => roomFits(r, m, c) && free(r));
+      if(!r) return null; rooms.push(r.id); taken.add(r.id);
+    }
+    return rooms;
+  };
+  // A move can change several classes' days (combined lessons), so every class the lessons touch is scored.
+  const scoreAll = (ms, others) => [...new Set(ms.flatMap(m => occOf(m).map(g => g.classId)))]
+    .reduce((s, cid) => s + classScore(cid, [...others.filter(x => occOf(x).some(g => g.classId === cid)), ...ms]), 0);
+  const units = {}; placed.forEach(x => (units[x.unit] = units[x.unit] || []).push(x));
+  for(let pass=0; pass<4; pass++){
+    let moves = 0;
+    for(const key of Object.keys(units)){
+      const ms = units[key], c = byId(S.classes, ms[0].classId), len = ms[0].len;
+      const others = placed.filter(x => String(x.unit) !== key), o = occupancy(others, c), now = scoreAll(ms, others);
+      let bestMove = null;
+      for(let d=0; d<D; d++) for(let p=0; p+len<=P; p++){
+        if(d === ms[0].day && p === ms[0].period) continue;
+        const rooms = canPlace(ms, o, c, d, p, ms[0].period); if(!rooms) continue;
+        const sc = scoreAll(ms.map(m => ({...m, day:d, period:p})), others);
+        if(sc < now - 0.01 && (!bestMove || sc < bestMove.sc)) bestMove = {d, p, rooms, sc};
+      }
+      if(bestMove){ ms.forEach((m, i) => { m.day = bestMove.d; m.period = bestMove.p; m.roomId = bestMove.rooms[i]; }); moves++; }
+    }
+    if(!moves) break;
+  }
+  const still = [];
+  leftovers.forEach(ms => {
+    const c = byId(S.classes, ms[0].classId), len = ms[0].len, o = occupancy(placed, c);
+    let bestMove = null;
+    for(let d=0; d<D; d++) for(let p=0; p+len<=P; p++){
+      const rooms = canPlace(ms, o, c, d, p, null); if(!rooms) continue;
+      const sc = scoreAll(ms.map(m => ({...m, day:d, period:p})), placed);
+      if(!bestMove || sc < bestMove.sc) bestMove = {d, p, rooms, sc};
+    }
+    if(bestMove) ms.forEach((m, i) => { m.day = bestMove.d; m.period = bestMove.p; m.roomId = bestMove.rooms[i]; placed.push(m); });
+    else still.push(ms);
+  });
+  return {placed, still};
+}
+function classDays(placed){
+  const map = {};
+  placed.forEach(x => occOf(x).forEach(g => { for(let k=0; k<x.len; k++){ const key = g.classId+'|'+x.day; (map[key] = map[key] || new Set()).add(x.period+k); } }));
+  Object.keys(map).forEach(k => map[k] = [...map[k]]);
+  return map;
+}
+// Empty hours between a class's first and last lesson of a day. Its break and fixed hours are not gaps.
+function gapsOf(placed, breaks = {}){
+  let gaps = 0;
+  Object.entries(classDays(placed)).forEach(([key, ps]) => {
+    const [cid, d] = key.split('|'), lo = Math.min(...ps), hi = Math.max(...ps), br = breaks[cid];
+    const fx = ((byId(S.classes, cid) || {}).fixed || []).filter(f => { const [fd, fp] = f.sl.split('-').map(Number); return fd === +d && fp > lo && fp < hi && fp !== br; }).length;
+    gaps += (hi - lo + 1) - ps.length - (br != null && br > lo && br < hi ? 1 : 0) - fx;
+  });
+  return gaps;
+}
+function metrics(R){
+  const st = S.settings, needed = R.needed || expandSessions().length, mins = periodMinutes();
+  let prefT = 0, prefOk = 0, repeats = 0; const seen = {}, tSlots = {};
+  R.placed.forEach(x => {
+    const t = byId(S.teachers, x.teacherId);
+    if(t && t.pref && t.pref !== 'any'){ prefT++; if(!prefBroken(t.pref, x.period, x.len)) prefOk++; }
+    const k = x.classId+x.subjectId+(x.batch || '')+'|'+x.day; if(seen[k]) repeats++; seen[k] = 1;
+    [x.teacherId, x.coTeacherId].filter(Boolean).forEach(id => { for(let q=0; q<x.len; q++) (tSlots[id+'|'+x.day] = tSlots[id+'|'+x.day] || new Set()).add(x.period + q); });
+  });
+  // Longest run of back-to-back periods any teacher has (a shared break splits a run).
+  let longest = 0;
+  Object.values(tSlots).forEach(set => { let run = 0; for(let q=0; q<st.periods; q++){
+    run = set.has(q) ? (st.breakMode === 'same' && q === st.breakAfter ? 1 : run + 1) : 0; longest = Math.max(longest, run); } });
+  const ends = Object.values(classDays(R.placed)).map(ps => mins[Math.max(...ps)].b);
+  const finish = ends.length ? Math.round(ends.reduce((a,b) => a + b, 0) / ends.length) : 0;
+  const latest = ends.length ? Math.max(...ends) : 0;
+  const gaps = gapsOf(R.placed, R.breaks || {}), placed = R.placed.length;
+  const roomUse = S.rooms.length ? Math.round(R.placed.reduce((a,x) => a + x.len, 0) / (S.rooms.length * st.days.length * st.periods) * 100) : 0;
+  // Problems are measured per class-day, so a big college is not marked down just for having more classes.
+  // Any missing lesson costs at least 10 points.
+  const days = Math.max(1, Object.keys(classDays(R.placed)).length), miss = Math.max(0, needed - placed);
+  const score = Math.max(0, Math.round(100 - (miss ? 10 + 300 * miss / Math.max(1, needed) : 0)
+    - 40 * gaps / days - 40 * repeats / days - 10 * (prefT ? (prefT - prefOk) / prefT : 0)));
+  return {needed, placed, gaps, prefT, prefOk, repeats, roomUse, score, finish, latest, longest};
+}
+function dataStamp(){
+  const st = S.settings, txt = JSON.stringify([st.days, st.periods, st.breakAfter, st.breakMode, st.breakSlots, S.rooms, S.teachers, S.classes, S.subjects]);
+  let h = 0; for(let i=0; i<txt.length; i++) h = (h*31 + txt.charCodeAt(i)) | 0;
+  return h;
+}
+
+// ---------- Timetable page ----------
+function readyStrip(){
+  if(isAdmin()) return `<div class="card flat"><b>Department status</b> <span class="muted">— who has finished entering their data</span>
+    <div class="chips" style="margin-top:10px">${S.departments.map(d => `<span class="tag ${d.ready?'g':'y'}">${d.ready?'✓':'…'} ${esc(d.name)}</span>`).join('') || '<span class="muted">No departments yet</span>'}</div></div>`;
+  const d = myDept();
+  return `<div class="card flat row"><div><b>${d.ready ? '✓ Your department is marked ready' : 'Finished adding your data?'}</b>
+    <div class="muted">${d.ready ? 'The admin can now include you in the timetable.' : 'Let the admin know your teachers, classes and subjects are complete.'}</div></div>
+    <button class="btn ${d.ready?'':'hot'}" onclick="toggleReady()">${d.ready ? 'Undo' : 'Mark as ready'}</button></div>`;
+}
+function toggleReady(){ const d = myDept(); d.ready = !d.ready; save(); render(); }
+function breakPlan(R){
+  if(!R.breaks || !Object.keys(R.breaks).length) return '';
+  const times = periodTimes(), groups = {};
+  S.classes.filter(c => inScope('classes', c) && R.breaks[c.id] != null).forEach(c => (groups[R.breaks[c.id]] = groups[R.breaks[c.id]] || []).push(c.name));
+  return `<div class="card"><h3>Break plan</h3><p class="muted" style="margin-top:0">Classes take turns, so rooms stay in use while others are on break.</p>
+    <div class="grid2">${Object.keys(groups).sort((a,b) => a - b).map(p => `<div><label class="f">Break at ${times[p]}</label>
+      <div class="chips">${groups[p].map(n => `<span class="tag">${esc(n)}</span>`).join('')}</div></div>`).join('')}</div></div>`;
+}
+function pageResult(){
+  const R = S.result;
+  const head = pageHead('Timetable', isAdmin() ? 'One timetable for the whole college. Every department and every shared room is included.' : `Your department's part of the college timetable.`);
+  if(!R) return head + readyStrip() + `<div class="card empty"><h3>No timetable yet</h3>` + (isAdmin()
+    ? `<p class="muted">When departments are ready, press the button.</p><button class="btn hot big" onclick="makeTimetable()">Make timetable</button></div>`
+    : `<p class="muted">The admin will make it once every department is ready.</p></div>`);
+  if(R.errors) return head + `<div class="card"><h3>Please fix these first</h3><p class="muted">These make a clash-free timetable impossible.</p>
+    ${R.errors.map(e => `<div class="msg bad">${esc(e)}</div>`).join('')}
+    ${isAdmin() ? `<div class="foot"><button class="btn" onclick="go('subjects')">← Go and fix</button><button class="btn hot" onclick="makeTimetable()">Try again</button></div>` : ''}</div>`;
+
+  const m = metrics(R), st = S.settings;
+  const opts = isAdmin() ? [['class','A class'],['teacher','A teacher'],['room','A room']] : [['class','A class'],['teacher','A teacher']];
+  const list = viewList(view.by);
+  if(!byId(list, view.id)) view.id = (list[0] || {}).id;
+  const loads = S.teachers.filter(t => inScope('teachers', t)).map(t => [t, R.placed.filter(x => teaches(x, t.id)).reduce((a,x) => a + x.len, 0)]);
+  const maxLoad = Math.max(1, ...loads.map(l => l[1]));
+
+  return head + readyStrip() + `
+  <div class="stats">
+    <div class="stat s1"><b>${m.score}</b><span>Quality score / 100</span></div>
+    <div class="stat"><b>${m.placed}/${m.needed}</b><span>Classes placed</span></div>
+    <div class="stat"><b>${fmtTime(m.finish)}</b><span>Students finish, on average</span></div>
+    <div class="stat"><b>${m.gaps}</b><span>Empty gaps in a day</span></div>
+    <div class="stat"><b>${m.prefT ? m.prefOk + '/' + m.prefT : '—'}</b><span>Teacher wishes met</span></div>
+    <div class="stat"><b>${m.roomUse}%</b><span>Room usage</span></div>
+  </div>
+  ${R.unplaced.length ? `<div class="msg bad"><b>${R.unplaced.length} class(es) didn't fit:</b> ${R.unplaced.map(id => { const [sid, b] = String(id).split(':'), s = byId(S.subjects, sid);
+      return s ? esc(s.name + (b ? ' batch ' + b : '') + ' (' + ((byId(S.classes, s.classId) || {}).name || '') + ')') : ''; }).join(', ')}.
+     Try adding a room, giving the teacher more time, or fewer times per week.</div>`
+    : `<div class="msg ok">✓ Everything fits with no clashes. The latest any class ends is ${fmtTime(m.latest)}.${st.maxStreak ? ` No teacher teaches more than ${m.longest} periods in a row.` : ''} Made ${esc(R.at)}.</div>`}
+  ${isAdmin() ? (R.warns || []).map(w => `<div class="msg warn">${esc(w)}</div>`).join('') : ''}
+  <div class="card">
+    <div class="toolbar">
+      <div><label class="f">Show timetable for</label>
+        <select onchange="view={by:this.value,id:null};render()">${opts.map(([v,l]) => `<option value="${v}" ${view.by===v?'selected':''}>${l}</option>`).join('')}</select></div>
+      <div><label class="f">Which one</label>
+        <select onchange="view.id=this.value;render()">${list.map(x => `<option value="${x.id}" ${x.id===view.id?'selected':''}>${esc(x.name)}</option>`).join('')}</select></div>
+      <div class="acts">
+        ${isAdmin() ? `<button class="btn" onclick="makeTimetable()">↻ Make again</button><button class="btn sun" onclick="saveVersion()">Save as version</button>` : ''}
+        <button class="btn" onclick="downloadCSV()">Excel</button>
+        <button class="btn ink" onclick="window.print()">Print</button>
+      </div>
+    </div>
+    <h3 style="margin-bottom:10px">${esc((byId(list, view.id) || {}).name || '')}</h3>
+    ${grid(view.by, view.id)}
+  </div>
+  ${breakPlan(R)}
+  <div class="card noprint"><h3>Teacher workload</h3><p class="muted" style="margin-top:0">Periods per week. Even bars mean work is shared fairly.</p>
+    <table>${loads.map(([t, l]) => `<tr><td style="width:200px">${esc(t.name)}</td><td><div class="bar"><i style="width:${l/maxLoad*100}%"></i></div></td><td style="width:50px;text-align:right"><b>${l}</b></td></tr>`).join('')}</table></div>
+  ${isAdmin() ? `<div class="card noprint"><h3>Room usage</h3><p class="muted" style="margin-top:0"><b>Busy</b> = how much of the week the room is in use. <b>Seats filled</b> = how full it is when in use. A big room with few seats filled is better given to a bigger class.</p>
+    <table><thead><tr><th>Room</th><th>Busy</th><th></th><th style="text-align:right">Seats filled</th></tr></thead>${S.rooms.map(r => {
+      const uses = R.placed.filter(x => x.roomId === r.id), pct = Math.round(uses.reduce((a,x) => a + x.len, 0) / (st.days.length * st.periods) * 100);
+      const fill = uses.length ? Math.round(uses.reduce((a,x) => a + (+(x.size || (byId(S.classes, x.classId) || {}).size) || 0) / r.capacity, 0) / uses.length * 100) : 0;
+      return `<tr><td style="width:220px">${esc(r.name)} <small class="muted">${r.capacity} seats · ${r.type}${r.dept ? '' : ' · shared'}</small></td><td><div class="bar"><i style="width:${pct}%"></i></div></td><td style="width:50px;text-align:right"><b>${pct}%</b></td>
+        <td style="width:110px;text-align:right">${uses.length ? fill + '%' : '<span class="muted">unused</span>'}</td></tr>`; }).join('')}</table></div>` : ''}`;
+}
+function viewList(by){
+  if(by === 'class') return S.classes.filter(c => inScope('classes', c));
+  if(by === 'teacher') return S.teachers.filter(t => inScope('teachers', t));
+  return S.rooms;
+}
+const fmtTime = x => `${String(Math.floor(x/60) % 24).padStart(2,'0')}:${String(x % 60).padStart(2,'0')}`;
+function periodMinutes(){
+  const st = S.settings; const [h, m] = (st.start || '08:30').split(':').map(Number); let t = h*60 + m;
+  return range(st.periods).map(p => { const a = t; t += st.length; const out = {a, b:t}; if(st.breakMode === 'same' && p+1 === st.breakAfter) t += st.breakLength; return out; });
+}
+const periodTimes = () => periodMinutes().map(x => `${fmtTime(x.a)}–${fmtTime(x.b)}`);
+function colorFor(str){ let h = 0; for(const ch of String(str)) h = (h*31 + ch.charCodeAt(0)) >>> 0; return PALETTE[h % PALETTE.length]; }
+const keyFor = by => by === 'class' ? 'classId' : by === 'teacher' ? 'teacherId' : 'roomId';
+const teaches = (x, id) => x.teacherId === id || x.coTeacherId === id;
+// The student groups a lesson occupies: its class (or one batch of it), or for a combined lesson several of them.
+const occOf = x => x.occ || [{classId:x.classId, batch:x.batch || ''}];
+const inView = (x, by, id) => by === 'teacher' ? teaches(x, id) : by === 'class' ? occOf(x).some(g => g.classId === id) : x[keyFor(by)] === id;
+function cellLabel(x, by){
+  const s = byId(S.subjects, x.subjectId) || {}, c = byId(S.classes, x.classId) || {}, r = byId(S.rooms, x.roomId) || {};
+  const t = {name:[x.teacherId, x.coTeacherId].filter(Boolean).map(id => (byId(S.teachers, id) || {}).name).join(' & ')};
+  const lines = by === 'class' ? [t.name, r.name] : by === 'teacher' ? [c.name, r.name] : [c.name, t.name, `${x.size || c.size}/${r.capacity} seats`];
+  const sub = lines.filter(Boolean).join(' · ');
+  // Imported timetables keep the college's own subject text and group names (A1, B1…) so they read like the original.
+  const who = x.occ && s.groupNames ? s.groupNames.map(g => g.split(' ').pop()).join(', ')
+    : x.batch && s.raw ? (c.name || '').split(' ').pop() + ('ABCDEFGH'.indexOf(x.batch) + 1)
+    : x.batch ? `Batch ${x.batch}` : '';
+  const title = s.raw || ((s.name || '') + (s.type === 'Lab' ? ' (Lab)' : ''));
+  return {title:title + (who && by !== 'class' ? ` · ${who}` : ''), sub:who && by === 'class' ? `${who}: ${sub}` : sub};
+}
+// A class hour kept from an imported timetable (shared electives, projects, other departments' lessons).
+function fixedAt(by, id, d, p){
+  if(by !== 'class') return '';
+  return ((byId(S.classes, id) || {}).fixed || []).find(f => f.sl === d+'-'+p) || null;
+}
+// Lessons sharing one class slot (lab batches side by side) are shown as one cell.
+function mergeLabels(list, by){
+  const labels = list.map(x => cellLabel(x, by));
+  return {title:[...new Set(labels.map(l => l.title))].join(' / '), subs:labels.map(l => l.sub)};
+}
+function grid(by, id){
+  const st = S.settings, times = periodTimes(), cells = S.result.placed.filter(x => inView(x, by, id));
+  const teacher = by === 'teacher' ? byId(S.teachers, id) : null;
+  const br = by === 'class' && S.result.breaks ? S.result.breaks[id] : null;
+  const hasBreak = st.breakMode === 'same' && st.breakAfter > 0 && st.breakAfter < st.periods;
+  let head = '<tr><th></th>';
+  range(st.periods).forEach(p => { head += `<th>P${p+1}<br><small>${times[p]}</small></th>`; if(hasBreak && p+1 === st.breakAfter) head += '<th style="width:34px"></th>'; });
+  const body = st.days.map((d, di) => {
+    let row = `<tr><td class="day">${d}</td>`;
+    // One cell per run of periods with the same lessons, so groups with lessons of different lengths side by side still line up.
+    const active = q => cells.filter(c => c.day === di && c.period <= q && c.period + c.len > q);
+    for(let p=0; p<st.periods;){
+      const here = active(p);
+      let span = 1;
+      if(here.length){
+        const same = q => { const a = active(q); return a.length === here.length && a.every(c => here.includes(c)); };
+        while(p + span < st.periods && same(p + span) && !(hasBreak && p + span === st.breakAfter)) span++;
+        const L = mergeLabels(here, by);
+        row += `<td colspan="${span}"><div class="cell" style="background:${colorFor(L.title)}"><b>${esc(L.title)}</b>${L.subs.map(s => `<small>${esc(s)}</small>`).join('')}</div></td>`;
+      }
+      else if(p === br) row += `<td class="brkcell">Break</td>`;
+      else if(fixedAt(by, id, di, p)){
+        const f = fixedAt(by, id, di, p), sameFixed = q => { const g = fixedAt(by, id, di, q); return g && g.label === f.label && g.sub === f.sub; };
+        while(p + span < st.periods && !active(p + span).length && sameFixed(p + span)) span++;
+        row += `<td colspan="${span}" class="off" title="Kept from the imported timetable"><small><b>${esc(f.label)}</b>${f.sub ? '<br>' + esc(f.sub) : ''}</small></td>`;
+      }
+      else { const off = teacher && (teacher.off || []).includes(di+'-'+p); row += `<td class="${off?'off':''}">${off ? '<small>off</small>' : ''}</td>`; }
+      p += span;
+      if(hasBreak && p === st.breakAfter && di === 0) row += `<td class="brk" rowspan="${st.days.length}">BREAK</td>`;
+    }
+    return row + '</tr>';
+  }).join('');
+  return `<div class="tt"><table>${head}</tr>${body}</table></div>`;
+}
+
+// ---------- Absences and cover ----------
+// Flow: teacher reports (from their phone) or HOD/admin adds it → HOD/admin assigns cover → substitute and students see it on their phones.
+function absenceClasses(a){
+  const di = dayIdxOfDate(a.date);
+  if(di < 0 || !S.result || !S.result.placed) return [];
+  return S.result.placed.filter(x => x.teacherId === a.teacherId && x.day === di).sort((p,q) => p.period - q.period);
+}
+function absStatus(a){ const cl = absenceClasses(a); return {total:cl.length, covered:cl.filter(x => a.picks && a.picks[x.period]).length}; }
+function openAbsences(){
+  if(!ROLE || ROLE.type === 'viewer') return [];
+  const today = iso(new Date());
+  return S.absences.filter(a => { const t = byId(S.teachers, a.teacherId), s = absStatus(a); return t && inScope('teachers', t) && a.date >= today && s.covered < s.total; });
+}
+function addAbsence(teacherId, date, reason, note, by){
+  if(!teacherId) return toast('Pick a teacher.');
+  if(!date || dayIdxOfDate(date) < 0) return toast('That date is not a working day.');
+  if(S.absences.some(a => a.teacherId === teacherId && a.date === date)) return toast('This absence is already reported.');
+  const a = {id:uid(), teacherId, date, reason, note, by, picks:{}, at:new Date().toLocaleString()};
+  S.absences.push(a); save(); return a;
+}
+// relaxed = also allow teachers who would go over their daily limit (used only when nobody else is free).
+function findSubs(x, absent, a, relaxed = false){
+  const st = S.settings, P = S.result.placed;
+  const covers = S.absences.filter(b => b.date === a.date).flatMap(b => absenceClasses(b)
+    .filter(y => b.picks[y.period] && !(b === a && y.period === x.period)).map(y => ({tid:b.picks[y.period], period:y.period, len:y.len})));
+  const awayToday = new Set(S.absences.filter(b => b.date === a.date).map(b => b.teacherId));
+  return S.teachers.filter(c => c.id !== absent.id && !awayToday.has(c.id)).map(c => {
+    for(let k=0; k<x.len; k++){
+      const p = x.period + k, inSlot = y => y.period <= p && y.period + y.len > p;
+      if((c.off || []).includes(x.day+'-'+p)) return null;
+      if(P.some(y => teaches(y, c.id) && y.day === x.day && inSlot(y))) return null;
+      if(covers.some(y => y.tid === c.id && inSlot(y))) return null;
+    }
+    const dayLoad = P.filter(y => teaches(y, c.id) && y.day === x.day).reduce((s,y) => s + y.len, 0)
+                  + covers.filter(y => y.tid === c.id).reduce((s,y) => s + y.len, 0);
+    const isBusy = q => P.some(y => teaches(y, c.id) && y.day === x.day && y.period <= q && y.period + y.len > q) || covers.some(y => y.tid === c.id && y.period <= q && y.period + y.len > q);
+    const over = dayLoad + x.len > (c.maxPerDay || st.periods) || !streakOK(isBusy, x.period, x.len);
+    if(over && !relaxed) return null;
+    const sameDept = c.dept && c.dept === absent.dept, knows = P.some(y => teaches(y, c.id) && y.classId === x.classId);
+    const why = [over ? 'over daily or in-a-row limit' : '', sameDept ? 'same dept' : '', knows ? 'knows this class' : '', `${dayLoad} classes that day`].filter(Boolean).join(' · ');
+    return {t:c, why, over, score:(over ? 50 : 0) + (sameDept ? 0 : 10) + (knows ? 0 : 3) + dayLoad};
+  }).filter(Boolean).sort((p,q) => p.score - q.score);
+}
+// Why nobody is free at this hour, in plain words.
+function busyReason(x, absent, a){
+  const P = S.result.placed, others = S.teachers.filter(c => c.id !== absent.id);
+  const inSlot = y => y.day === x.day && y.period < x.period + x.len && y.period + y.len > x.period;
+  const teaching = others.filter(c => P.some(y => teaches(y, c.id) && inSlot(y))).length;
+  const away = others.filter(c => S.absences.some(b => b.date === a.date && b.teacherId === c.id)).length;
+  const off = others.filter(c => range(x.len).some(k => (c.off || []).includes(x.day+'-'+(x.period+k)))).length;
+  return [`${teaching} teaching`, away ? `${away} absent` : '', off ? `${off} on time off` : ''].filter(Boolean).join(', ') + ` (out of ${others.length} teachers)`;
+}
+function autoAssign(id){
+  const a = byId(S.absences, id), t = byId(S.teachers, a.teacherId), cl = absenceClasses(a);
+  const todo = cl.filter(x => !a.picks[x.period]);
+  if(!todo.length) return toast('All classes already have cover.');
+  let n = 0, extra = 0, none = 0;
+  todo.forEach(x => {
+    let best = findSubs(x, t, a)[0];
+    if(!best){ best = findSubs(x, t, a, true)[0]; if(best) extra++; }
+    if(best){ a.picks[x.period] = best.t.id; n++; } else { a.picks[x.period] = 'self'; none++; }
+  });
+  save(); render();
+  toast([n ? `Cover assigned for ${n} class(es)` : '', extra ? `${extra} needed a teacher over their daily limit` : '',
+         none ? `${none} set to self-study (nobody free)` : ''].filter(Boolean).join(' · '));
+}
+function setPick(id, period, tid){ const a = byId(S.absences, id); a.picks[period] = a.picks[period] === tid ? undefined : tid; save(); render(); }
+function delAbsence(id){ if(!confirm('Remove this absence?')) return; S.absences = S.absences.filter(a => a.id !== id); save(); render(); }
+
+function pageSubs(){
+  const head = pageHead('Absences', 'When a teacher can\'t come, they report it from their phone (or you add it here). You assign cover, and the substitute and students see it on their phones.');
+  if(!S.result || !S.result.placed) return head + `<div class="card empty"><h3>Make the timetable first</h3><p class="muted">Cover is found from the finished timetable.</p></div>`;
+  const teachers = S.teachers.filter(t => inScope('teachers', t));
+  const list = S.absences.filter(a => { const t = byId(S.teachers, a.teacherId); return t && inScope('teachers', t); }).sort((p,q) => q.date.localeCompare(p.date));
+  if(!byId(list, subs.absenceId)) subs.absenceId = (list.find(a => { const s = absStatus(a); return s.covered < s.total; }) || list[0] || {}).id;
+  const sel = byId(list, subs.absenceId);
+
+  const form = `<div class="card"><h3>Add an absence</h3><div class="grid2" style="margin-top:12px">
+      <div><label class="f">Teacher</label><select id="aTeacher">${teachers.map(t => `<option value="${t.id}">${esc(t.name)}</option>`).join('')}</select></div>
+      <div><label class="f">Date</label><input id="aDate" type="date" value="${nextWorkingDate()}"></div>
+      <div><label class="f">Reason</label><select id="aReason">${REASONS.map(r => `<option>${r}</option>`).join('')}</select></div>
+      <div><label class="f">Note for the substitute (optional)</label><input id="aNote" placeholder="e.g. Continue chapter 4"></div>
+    </div><div class="addbar"><button class="btn ink" onclick="submitAbsence()">Add absence</button></div></div>`;
+
+  const rows = list.map(a => { const t = byId(S.teachers, a.teacherId), s = absStatus(a);
+    const tag = !s.total ? '<span class="tag">No classes that day</span>' : s.covered === s.total ? '<span class="tag g">✓ Covered</span>' : `<span class="tag y">Needs cover · ${s.covered}/${s.total}</span>`;
+    return `<tr style="${a === sel ? 'background:var(--soft)' : ''}"><td><b>${esc(t.name)}</b><br><small class="muted">${a.by === 'teacher' ? 'Reported by the teacher' : 'Added by office'} · ${esc(a.reason)}</small></td>
+      <td>${niceDate(a.date)}</td><td>${tag}</td>
+      <td style="white-space:nowrap;text-align:right"><button class="btn sm ${a === sel ? 'ink' : ''}" onclick="subs.absenceId='${a.id}';render()">Open</button> <button class="x" onclick="delAbsence('${a.id}')">×</button></td></tr>`; }).join('');
+
+  let detail = '';
+  if(sel){
+    const t = byId(S.teachers, sel.teacherId), times = periodTimes(), cl = absenceClasses(sel), s = absStatus(sel);
+    detail = `<div class="card"><div class="row"><div><span class="eyebrow">${niceDate(sel.date)}</span><h3>Cover for ${esc(t.name)}</h3></div>
+        ${cl.length ? `<div class="chips"><button class="btn" onclick="autoAssign('${sel.id}')">Auto-assign best</button><button class="btn hot" ${s.covered ? '' : 'disabled'} onclick="copyNotice('${sel.id}')">Copy notice</button></div>` : ''}</div>
+      ${sel.note ? `<div class="msg">Teacher's note: ${esc(sel.note)}</div>` : ''}
+      ${cl.length ? cl.map(x => {
+        const sj = byId(S.subjects, x.subjectId) || {}, c = byId(S.classes, x.classId) || {}, r = byId(S.rooms, x.roomId) || {};
+        const strict = findSubs(x, t, sel), cands = strict.length ? strict : findSubs(x, t, sel, true);
+        const chosen = sel.picks[x.period];
+        return `<div style="border-top:1px solid var(--line);padding:14px 0">
+          <div><b>${times[x.period].split('–')[0]}</b> · ${esc(sj.name)} · ${esc(c.name)} · <span class="muted">${esc(r.name)}</span></div>
+          ${strict.length ? '' : `<div class="msg warn">No teacher is free within their daily limit at this hour: ${busyReason(x, t, sel)}.
+            ${cands.length ? 'These teachers could take one extra class:' : 'Students can do self-study, or join another class.'}</div>`}
+          <div class="chips" style="margin-top:8px">${cands.slice(0, 5).map(o =>
+            `<button class="chip ${chosen === o.t.id ? 'on' : ''}" onclick="setPick('${sel.id}',${x.period},'${o.t.id}')">${esc(o.t.name)} <small>${o.why}</small></button>`).join('')}
+            <button class="chip ${chosen === 'self' ? 'on' : ''}" onclick="setPick('${sel.id}',${x.period},'self')">Self-study <small>no teacher, class monitor in charge</small></button></div></div>`; }).join('')
+      : `<p class="muted">${esc(t.name)} has no classes on this day, so nothing needs cover.</p>`}</div>`;
+  }
+  return head + `<div class="card"><h3>Absence list</h3>${list.length ? `<div style="overflow-x:auto"><table><tbody>${rows}</tbody></table></div>` : '<p class="muted">No absences reported.</p>'}</div>` + detail + form;
+}
+function submitAbsence(){
+  const a = addAbsence(document.getElementById('aTeacher').value, document.getElementById('aDate').value,
+    document.getElementById('aReason').value, document.getElementById('aNote').value.trim(), 'office');
+  if(a){ subs.absenceId = a.id; render(); toast('Absence added. Now assign cover.'); }
+}
+function copyNotice(id){
+  const a = byId(S.absences, id), times = periodTimes(), t = byId(S.teachers, a.teacherId);
+  const lines = absenceClasses(a).map(x => {
+    const s = byId(S.subjects, x.subjectId) || {}, c = byId(S.classes, x.classId) || {}, r = byId(S.rooms, x.roomId) || {}, sub = byId(S.teachers, a.picks[x.period]);
+    const who = a.picks[x.period] === 'self' ? 'Self-study (class monitor in charge)' : sub ? sub.name : 'NOT ASSIGNED';
+    return `• ${times[x.period].split('–')[0]} ${c.name} – ${s.name} in ${r.name} → ${who}`;
+  });
+  copyText(`Cover notice – ${niceDate(a.date)}\n${t.name} is away.\n${lines.join('\n')}${a.note ? `\nNote from ${t.name}: ${a.note}` : ''}`, 'Notice copied — paste it in WhatsApp or email');
+}
+function copyText(text, msg){
+  const done = () => toast(msg);
+  if(navigator.clipboard) navigator.clipboard.writeText(text).then(done, () => fallback());
+  else fallback();
+  function fallback(){ const a = document.createElement('textarea'); a.value = text; document.body.appendChild(a); a.select(); document.execCommand('copy'); a.remove(); done(); }
+}
+
+// ---------- Compare versions (admin) ----------
+function saveVersion(){
+  const name = prompt('Name this version', 'Version ' + (S.versions.length + 1));
+  if(name === null) return;
+  S.versions.push({id:uid(), name:name || 'Version ' + (S.versions.length + 1), at:new Date().toLocaleString(),
+    result:JSON.parse(JSON.stringify(S.result)), stamp:dataStamp(), m:metrics(S.result)});
+  save(); toast(`Saved “${name}” — see it under Compare`); render();
+}
+function pageVersions(){
+  const head = pageHead('Compare versions', 'Make the timetable a few times, save the ones you like, and pick the best. Only you (the admin) can see this.');
+  const V = S.versions, stamp = dataStamp();
+  if(!V.length) return head + `<div class="card empty"><h3>No saved versions yet</h3><p class="muted">On the Timetable page, press <b>Make again</b> and then <b>Save as version</b>.</p>
+    <button class="btn ink" onclick="go('result')">Go to Timetable</button></div>`;
+  const cols = [['score','Score',1],['placed','Placed',1],['finish','Finish (avg)',-1],['gaps','Empty gaps',-1],['repeats','Same subject twice a day',-1],['prefOk','Wishes met',1],['roomUse','Room usage %',1]];
+  const val = (v, k) => v.m[k] ?? 0;
+  const bestOf = {}; cols.forEach(([k,,dir]) => bestOf[k] = dir > 0 ? Math.max(...V.map(v => val(v,k))) : Math.min(...V.map(v => val(v,k))));
+  const show = (v, k) => k === 'prefOk' ? v.m.prefOk + '/' + v.m.prefT : k === 'finish' ? (v.m.finish ? fmtTime(v.m.finish) : '—') : val(v,k);
+  const winner = V.reduce((a,b) => b.m.score > a.m.score ? b : a);
+  return head + `<div class="card" style="background:var(--sun);border-color:transparent"><h3>${esc(winner.name)} is the best so far</h3><p style="margin:4px 0 0">Score ${winner.m.score}/100 · ${winner.m.gaps} empty gaps · ${winner.m.prefOk}/${winner.m.prefT} wishes met</p></div>
+  <div class="card"><div style="overflow-x:auto"><table>
+    <thead><tr><th>Version</th>${cols.map(c => `<th>${c[1]}</th>`).join('')}<th></th></tr></thead>
+    <tbody>${V.map(v => { const old = v.stamp !== stamp; return `<tr>
+      <td><b>${esc(v.name)}</b><br><small class="muted">${esc(v.at)}${old ? ' · <span style="color:var(--coral)">made with older data</span>' : ''}</small></td>
+      ${cols.map(([k]) => `<td class="${val(v,k) === bestOf[k] && V.length > 1 ? 'best' : ''}">${show(v,k)}</td>`).join('')}
+      <td style="white-space:nowrap"><button class="btn sm ${v === winner ? 'hot' : ''}" ${old ? 'disabled title="Data has changed since"' : ''} onclick="useVersion('${v.id}')">Use this</button>
+        <button class="x" title="Delete" onclick="delVersion('${v.id}')">×</button></td></tr>`; }).join('')}</tbody></table></div>
+    <p class="muted" style="margin-bottom:0">Green = best in that column.</p></div>`;
+}
+function useVersion(id){ const v = byId(S.versions, id); S.result = JSON.parse(JSON.stringify(v.result)); S.absences.forEach(a => a.picks = {}); save(); toast(`Now using “${v.name}”`); go('result'); }
+function delVersion(id){ S.versions = S.versions.filter(v => v.id !== id); save(); render(); }
+
+// ---------- Share links and phone view ----------
+const enc = o => btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+const dec = s => JSON.parse(decodeURIComponent(escape(atob(s.replace(/-/g,'+').replace(/_/g,'/')))));
+// Items: [day, period, len, title, subtitle, flag, note]. Flags show this week's absences: 'sub' (class has a substitute), 'away', 'cover'.
+function buildPayload(by, id, pick){
+  const st = S.settings, ent = byId(by === 'class' ? S.classes : S.teachers, id) || {}, R = S.result;
+  let items = (R && R.placed || []).filter(x => inView(x, by, id) && trackKeeps(x, by, id, pick)).map(x => {
+    const L = cellLabel(x, by), a = S.absences.find(b => b.teacherId === x.teacherId && b.date === weekDate(x.day));
+    let flag = '', note = '';
+    if(a){
+      const sub = byId(S.teachers, a.picks[x.period]), self = a.picks[x.period] === 'self', t = byId(S.teachers, x.teacherId) || {}, r = byId(S.rooms, x.roomId) || {};
+      if(by === 'class'){ flag = 'sub'; note = a.note || ''; L.sub = (x.batch ? `Batch ${x.batch}: ` : '') + (self ? `Self-study · ${r.name} · class monitor in charge` : sub ? `${sub.name} (substitute) · ${r.name}` : `${t.name} is away · cover being arranged`); }
+      else { flag = 'away'; L.sub = self ? `You're away · students do self-study` : sub ? `You're away · ${sub.name} covers` : `You're away · cover not assigned yet`; }
+    }
+    return [x.day, x.period, x.len, L.title, L.sub, flag, note];
+  });
+  if(by === 'teacher') S.absences.forEach(a => absenceClasses(a).forEach(x => {
+    if(a.picks[x.period] !== id || weekDate(x.day) !== a.date) return;
+    const s = byId(S.subjects, x.subjectId) || {}, c = byId(S.classes, x.classId) || {}, r = byId(S.rooms, x.roomId) || {}, t = byId(S.teachers, a.teacherId) || {};
+    items.push([x.day, x.period, x.len, s.name, `Cover for ${t.name} · ${c.name}${x.batch ? ' batch ' + x.batch : ''} · ${r.name}`, 'cover', a.note || '']);
+  }));
+  if(by === 'class'){
+    ((byId(S.classes, id) || {}).fixed || []).forEach(f => { const [d, p] = f.sl.split('-').map(Number);
+      if(f.label === 'Break') items.push([d, p, 1, 'Break', '', 'brk', '']);
+      else if(f.label !== 'Not available') items.push([d, p, 1, f.label, f.sub || 'Shared lesson', '', '']); });
+    const m = {};
+    items.forEach(it => { const k = it[0]+'|'+it[1];
+      if(!m[k]) m[k] = [...it];
+      else { if(!m[k][3].split(' / ').includes(it[3])) m[k][3] += ' / ' + it[3]; m[k][4] += ' · ' + it[4]; m[k][5] = m[k][5] || it[5]; m[k][6] = m[k][6] || it[6]; } });
+    items = Object.values(m);
+  }
+  const br = by === 'class' && R && R.breaks && R.breaks[id] != null ? R.breaks[id] : -1;
+  return {c:st.college, t:ent.name || '', d:st.days, tm:periodTimes(), b:st.breakMode === 'same' ? st.breakAfter : 0, br, i:items};
+}
+function shareLink(pl){ return location.href.split('#')[0] + '#v=' + enc(pl); }
+function phoneDays(pl){
+  const ti = pl.d.indexOf(ALL_DAYS[(new Date().getDay() + 6) % 7]);
+  if(phone.day == null || phone.day >= pl.d.length) phone.day = ti >= 0 ? ti : 0;
+  const di = phone.day, items = pl.i.filter(x => x[0] === di).sort((a,b) => a[1] - b[1]);
+  const FLAG = {sub:'Substitute today', away:'You are away', cover:'You are covering'};
+  let rows = '';
+  if(!items.length) rows = `<div class="pempty">No classes on ${pl.d[di]}</div>`;
+  else {
+    const end = Math.max(...items.map(x => x[1] + x[2]));
+    const covered = q => items.some(x => x[1] < q && x[1] + x[2] > q);
+    for(let p=0; p<end;){
+      const it = items.find(x => x[1] === p);
+      if(it && it[5] === 'brk'){ rows += `<div class="plunch">Break · ${pl.tm[p]}</div>`; p++; }
+      else if(it){
+        rows += `<div class="pcard ${it[5] ? 'f-' + it[5] : ''}" style="background:${colorFor(it[3])}"><div class="ptime">${pl.tm[p].split('–')[0]}<br><small>${pl.tm[p+it[2]-1].split('–')[1]}</small></div>
+          <div>${it[5] ? `<span class="pflag">${FLAG[it[5]]}</span>` : ''}<b>${esc(it[3])}</b><small>${esc(it[4])}</small>${it[6] ? `<small class="pnote">Note: ${esc(it[6])}</small>` : ''}</div></div>`;
+        p++;
+      }
+      else if(covered(p)) p++;
+      else if(p === pl.br){ rows += `<div class="plunch">Break · ${pl.tm[p]}</div>`; p++; }
+      else { rows += `<div class="pfree"><span>${pl.tm[p].split('–')[0]}</span>Free period</div>`; p++; }
+      if(pl.b > 0 && p === pl.b && p < end) rows += `<div class="plunch">Break</div>`;
+    }
+    rows += `<div class="pempty" style="padding:12px">Done for the day at ${pl.tm[end-1].split('–')[1]}</div>`;
+  }
+  return `<div class="pdays">${pl.d.map((d,i) => `<button class="chip ${i===di?'on':''}" onclick="phone.day=${i};render()">${d}${i===ti?'<i>TODAY</i>':''}</button>`).join('')}</div>${rows}`;
+}
+function phoneBlock(pl){ return `<div class="phead"><small>${esc(pl.c)}</small><h2>${esc(pl.t)}</h2></div>${phoneDays(pl)}`; }
+function sharedPage(){
+  return `<div class="phonewrap"><div class="ptop"><b>TimeWeave</b></div>${phoneBlock(SHARED)}
+    <p class="muted center" style="font-size:13px">Tip: add this page to your home screen to open it like an app.</p></div>`;
+}
+function viewerPage(){
+  const by = phone.by, list = by === 'class' ? S.classes : S.teachers;
+  if(!byId(list, phone.id)) phone.id = (list[0] || {}).id;
+  const ready = S.result && S.result.placed;
+  let mine = '';
+  if(by === 'teacher' && phone.id && ready){
+    const own = S.absences.filter(a => a.teacherId === phone.id && a.date >= iso(new Date())).sort((p,q) => p.date.localeCompare(q.date));
+    mine = `<button class="btn ink" style="width:100%;margin-top:12px" onclick="openReport()">I can't come — report absence</button>
+      ${own.map(a => { const s = absStatus(a);
+        return `<div class="msg ${s.covered === s.total ? 'ok' : 'warn'}"><b>Away ${niceDate(a.date)}</b> · ${s.total ? (s.covered === s.total ? 'all classes covered' : `${s.covered} of ${s.total} classes covered so far`) : 'no classes that day'}</div>`; }).join('')}`;
+  }
+  return `<div class="phonewrap"><div class="ptop"><b>TimeWeave</b><button class="btn sm" onclick="logout()">Exit</button></div>
+    <div class="seg"><button class="${by==='class'?'on':''}" onclick="phone.by='class';phone.id=null;render()">I'm a student</button>
+      <button class="${by==='teacher'?'on':''}" onclick="phone.by='teacher';phone.id=null;render()">I'm a teacher</button></div>
+    <select onchange="phone.id=this.value;render()">${list.map(x => `<option value="${x.id}" ${x.id===phone.id?'selected':''}>${esc(x.name)}</option>`).join('')}</select>
+    ${mine}
+    ${ready && phone.id ? (() => { const tp = trackPicker(by, phone.id); return tp.html + phoneBlock(buildPayload(by, phone.id, tp.pick)); })()
+      : `<div class="pempty">The timetable hasn't been published yet. Check back soon.</div>`}</div>`;
+}
+// 3rd year onwards: the student picks their track (and group, if their elective runs in two), and sees only those electives.
+function trackPicker(by, id){
+  const c = by === 'class' ? byId(S.classes, id) : null;
+  if(!c) return {html:'', pick:null};
+  if(phone.track === undefined) loadTrack();
+  const subs = subsectionsOf(c), sub = subs.includes((phone.subs || {})[c.id]) ? phone.subs[c.id] : '';
+  const subHtml = subs.length > 1 ? `<label class="f" style="margin-top:12px">My subsection</label>
+    <select onchange="phone.subs=phone.subs||{};phone.subs['${c.id}']=this.value;saveTrack();render()"><option value="">Whole class (all subsections)</option>
+      ${subs.map(l => `<option value="${l}" ${sub === l ? 'selected' : ''}>${esc(subName(c, l))}</option>`).join('')}</select>` : '';
+  if(!trackClass(c) || !S.tracks.list.length) return {html:subHtml, pick:{sub}};
+  const groups = trackGroupOptions(c, phone.track);
+  const has = !phone.track || S.subjects.some(s => s.groups && s.groups.some(g => g.classId === c.id) && trackOf(s).includes(phone.track));
+  const html = subHtml + `<label class="f" style="margin-top:12px">My track</label>
+    <select onchange="phone.track=this.value;phone.groups={};saveTrack();render()"><option value="">All tracks (every elective)</option>
+      ${S.tracks.list.map(t => `<option value="${t.id}" ${phone.track === t.id ? 'selected' : ''}>${esc(t.name)}</option>`).join('')}</select>
+    ${Object.entries(groups).map(([code, opts]) => `<label class="f" style="margin-top:10px">My ${esc(code)} group</label>
+      <select onchange="phone.groups['${esc(code)}']=this.value;saveTrack();render()"><option value="">Both groups</option>
+        ${opts.map(o => `<option value="${o.digit}" ${(phone.groups || {})[code] === o.digit ? 'selected' : ''}>${esc(o.label)}</option>`).join('')}</select>`).join('')}
+    ${has ? '' : `<div class="msg warn">No elective of this track is in ${esc(c.name)}'s timetable yet. Ask your HOD.</div>`}`;
+  return {html, pick:{track:phone.track, groups:phone.groups || {}, sub}};
+}
+function openReport(){
+  const t = byId(S.teachers, phone.id);
+  document.getElementById('modal').innerHTML = `<div class="modal" onclick="if(event.target===this)closeModal()"><div class="card" style="max-width:420px">
+    <h3>Report absence</h3><p class="muted">${esc(t.name)} · your HOD and the office will arrange cover.</p>
+    <label class="f">Date</label><input id="rDate" type="date" value="${nextWorkingDate()}">
+    <label class="f" style="margin-top:12px">Reason</label><select id="rReason">${REASONS.map(r => `<option>${r}</option>`).join('')}</select>
+    <label class="f" style="margin-top:12px">What should the substitute do? (optional)</label>
+    <input id="rNote" placeholder="e.g. Continue chapter 4, give worksheet 3">
+    <div class="foot"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn hot" onclick="sendReport()">Send</button></div></div></div>`;
+}
+function sendReport(){
+  const a = addAbsence(phone.id, document.getElementById('rDate').value, document.getElementById('rReason').value, document.getElementById('rNote').value.trim(), 'teacher');
+  if(a){ closeModal(); toast('Sent. Your HOD will assign cover — you can see the status here.'); }
+}
+function pageShare(){
+  const head = pageHead('Share with students', 'Each class gets its own link and QR code. Students open it on their phone — no app, no login.');
+  if(!S.result || !S.result.placed) return head + `<div class="card empty"><h3>Make the timetable first</h3></div>`;
+  const list = share.by === 'class' ? S.classes : S.teachers;
+  if(!byId(list, share.id)) share.id = (list[0] || {}).id;
+  const pl = buildPayload(share.by, share.id), link = shareLink(pl);
+  return head + `<div class="sharegrid"><div>
+    <div class="card"><div class="grid2">
+      <div><label class="f">Share the timetable of</label><select onchange="share={by:this.value,id:null};render()">
+        <option value="class" ${share.by==='class'?'selected':''}>A class</option><option value="teacher" ${share.by==='teacher'?'selected':''}>A teacher</option></select></div>
+      <div><label class="f">Which one</label><select onchange="share.id=this.value;render()">${list.map(x => `<option value="${x.id}" ${x.id===share.id?'selected':''}>${esc(x.name)}</option>`).join('')}</select></div>
+    </div>
+    <label class="f" style="margin-top:16px">Link</label><input id="shareLink" readonly value="${esc(link)}" onclick="this.select()">
+    <div class="chips" style="margin-top:12px"><button class="btn hot" onclick="copyText(document.getElementById('shareLink').value,'Link copied')">Copy link</button>
+      <button class="btn" onclick="window.open(document.getElementById('shareLink').value,'_blank')">Open</button>
+      <button class="btn" onclick="copyAllLinks()">Copy links for all ${share.by === 'class' ? 'classes' : 'teachers'}</button></div>
+    <div style="margin-top:18px"><label class="f">Scan to open</label><div id="qr"></div></div></div>
+    <div class="msg warn">Links open on any phone once this page is online — for example, drag the file into <b>app.netlify.com/drop</b> or GitHub Pages. On this computer they work right away.</div>
+  </div>
+  <div><label class="f">What students see</label><div class="frame"><div class="phonewrap">${phoneBlock(pl)}</div></div></div></div>`;
+}
+function drawQR(){
+  const el = document.getElementById('qr'), inp = document.getElementById('shareLink'); if(!el || !inp) return;
+  if(!window.QRCode){ el.innerHTML = '<small class="muted">QR codes need internet.</small>'; return; }
+  try{ new QRCode(el, {text:inp.value, width:180, height:180, correctLevel:QRCode.CorrectLevel.L}); }
+  catch(e){ el.innerHTML = '<small class="muted">This timetable is too big for a QR code — share the link instead.</small>'; }
+}
+function copyAllLinks(){
+  const list = share.by === 'class' ? S.classes : S.teachers;
+  copyText(list.map(x => `${x.name}: ${shareLink(buildPayload(share.by, x.id))}`).join('\n\n'), `Copied ${list.length} links`);
+}
+
+// ---------- Files ----------
+function downloadCSV(){
+  const st = S.settings, times = periodTimes(), cells = S.result.placed.filter(x => inView(x, view.by, view.id));
+  const br = view.by === 'class' && S.result.breaks ? S.result.breaks[view.id] : null;
+  const rows = [['Day', ...times.map((t,i) => `P${i+1} ${t}`)]];
+  st.days.forEach((d, di) => rows.push([d, ...range(st.periods).map(p => {
+    const here = cells.filter(c => c.day === di && c.period <= p && c.period + c.len > p);
+    if(!here.length) return p === br ? 'Break' : ''; const L = mergeLabels(here, view.by); return `${L.title} - ${L.subs.join(' | ')}`; })]));
+  const name = (byId(viewList(view.by), view.id) || {}).name || 'timetable';
+  download(rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n'), `${name}.csv`, 'text/csv');
+}
+function exportJSON(){ download(JSON.stringify(S, null, 2), `${S.settings.college || 'timetable'}.json`, 'application/json'); }
+function download(text, name, type){ const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], {type})); a.download = name; a.click(); }
+function importJSON(e){
+  const f = e.target.files[0]; e.target.value = ''; if(!f) return;
+  f.text().then(t => { try{ const d = JSON.parse(t); S = Object.assign(blank(), d); S.settings = Object.assign(blank().settings, d.settings); save(); toast('File opened'); go('setup'); }catch(err){ toast('That file could not be read.'); } });
+}
+function resetAll(){ if(confirm('Clear everything and start over?')){ S = blank(); save(); ROLE = null; saveRole(); render(); } }
+
+// ---------- Demo college ----------
+function loadSample(){
+  if((S.subjects.length || S.classes.length) && !confirm('Replace your current data with the demo college?')) return;
+  S = blank();
+  S.settings.college = 'Demo Institute of Technology';
+  S.departments = [{id:uid(),name:'CSE',head:'Dr. Mehta',pin:'1111',ready:true},{id:uid(),name:'ECE',head:'Dr. Singh',pin:'2222',ready:true},{id:uid(),name:'Maths',head:'Prof. Gill',pin:'3333',ready:false}];
+  const R = (name,type,capacity,dept) => ({id:uid(),name,type,capacity,dept});
+  S.rooms = [R('CSE-101','Classroom',70,'CSE'),R('CSE-102','Classroom',70,'CSE'),R('ECE-201','Classroom',70,'ECE'),R('ECE-202','Classroom',70,'ECE'),
+             R('Seminar Hall','Classroom',150,''),R('Computer Lab 1','Lab',40,''),R('Computer Lab 2','Lab',40,'CSE'),R('Electronics Lab','Lab',40,'ECE')];
+  const T = (name,dept,maxPerDay,pref='any',off=[]) => ({id:uid(),name,dept,maxPerDay,pref,off});
+  S.teachers = [T('Dr. Mehta','CSE',4),T('Prof. Kaur','CSE',4,'any',['0-0','0-1','0-2']),T('Dr. Rao','CSE',4,'nofirst'),T('Prof. Iyer','CSE',4),
+                T('Dr. Singh','ECE',4),T('Prof. Das','ECE',4,'morning',['4-4','4-5','4-6']),T('Dr. Nair','ECE',4,'afternoon'),T('Prof. Gill','Maths',5,'nolast')];
+  const C = (name,dept,size) => ({id:uid(),name,dept,size,breakAt:'auto'});
+  // CSE-2A has 60 students but labs seat 40, so its labs are split into batches.
+  S.classes = [C('CSE-2A','CSE',60),C('CSE-2B','CSE',38),C('ECE-2A','ECE',35),C('ECE-2B','ECE',36)];
+  const t = n => S.teachers.find(x => x.name === n).id;
+  const sub = (cls,name,teacher,type,perWeek,length,teacherB) => ({id:uid(),classId:cls.id,name,teacherId:t(teacher),type,perWeek,length,teacherB:teacherB ? t(teacherB) : ''});
+  const [a,b,c,d] = S.classes;
+  S.subjects = [
+    sub(a,'Data Structures','Dr. Mehta','Theory',4,1), sub(a,'DBMS','Prof. Kaur','Theory',3,1), sub(a,'Maths III','Prof. Gill','Theory',4,1),
+    sub(a,'OOP','Dr. Rao','Theory',3,1), sub(a,'DS Lab','Dr. Mehta','Lab',1,2,'Prof. Iyer'), sub(a,'DBMS Lab','Prof. Kaur','Lab',1,2),
+    sub(b,'Data Structures','Prof. Iyer','Theory',4,1), sub(b,'DBMS','Prof. Kaur','Theory',3,1), sub(b,'Maths III','Prof. Gill','Theory',4,1),
+    sub(b,'OOP','Dr. Rao','Theory',3,1), sub(b,'DS Lab','Prof. Iyer','Lab',1,2), sub(b,'OOP Lab','Dr. Rao','Lab',1,2),
+    sub(c,'Signals','Dr. Singh','Theory',4,1), sub(c,'Digital Circuits','Prof. Das','Theory',3,1), sub(c,'Maths III','Prof. Gill','Theory',4,1),
+    sub(c,'Networks','Dr. Nair','Theory',3,1), sub(c,'Circuits Lab','Prof. Das','Lab',1,2), sub(c,'Programming Lab','Dr. Nair','Lab',1,2),
+    sub(d,'Signals','Dr. Singh','Theory',4,1), sub(d,'Digital Circuits','Prof. Das','Theory',3,1), sub(d,'Maths III','Prof. Gill','Theory',3,1),
+    sub(d,'Networks','Dr. Nair','Theory',3,1), sub(d,'Circuits Lab','Dr. Singh','Lab',1,2)
+  ];
+  // One absence already reported by a teacher, so the cover flow can be shown straight away.
+  S.absences = [{id:uid(), teacherId:t('Dr. Mehta'), date:nextWorkingDate(), reason:'Sick', note:'Continue Trees (chapter 5). Worksheet is in the staff room.', by:'teacher', picks:{}, at:new Date().toLocaleString()}];
+  save(); ROLE = null; saveRole(); render(); toast('Demo college loaded — log in as admin with PIN 1234');
+}
+
+// ---------- Start ----------
+function readHash(){
+  SHARED = null;
+  if(location.hash.startsWith('#v=')){ try{ SHARED = dec(location.hash.slice(3)); }catch(e){ SHARED = null; } }
+  render();
+}
+window.addEventListener('hashchange', readHash);
+load(); readHash();
+</script>
+
+</body>
+</html>

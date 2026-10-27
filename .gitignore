@@ -1,0 +1,20 @@
+# Large demo videos: upload them as a GitHub Release asset or to YouTube instead
+*.mp4
+*.webm
+
+# Third-party data downloaded for testing (republishing it is the college's call)
+data/
+
+# Earlier design and outdated summary, kept locally only
+index-bold.html
+TimeWeave-summary.pdf
+
+# Local tool and editor settings
+.claude/
+.vscode/
+node_modules/
+
+# OS files
+Thumbs.db
+desktop.ini
+.DS_Store
